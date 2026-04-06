@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 140 20% 8%;
+    --foreground: 120 20% 90%;
+
+    --card: 140 20% 12%;
+    --card-foreground: 120 20% 90%;
+
+    --popover: 140 20% 14%;
+    --popover-foreground: 120 20% 90%;
+
+    --primary: 142 70% 45%;
+    --primary-foreground: 140 20% 8%;
+
+    --secondary: 140 15% 18%;
+    --secondary-foreground: 120 20% 85%;
+
+    --muted: 140 12% 16%;
+    --muted-foreground: 120 10% 55%;
+
+    --accent: 142 70% 45%;
+    --accent-foreground: 140 20% 8%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 140 15% 20%;
+    --input: 140 15% 20%;
+    --ring: 142 70% 45%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 140 20% 10%;
+    --sidebar-foreground: 120 20% 85%;
+    --sidebar-primary: 142 70% 45%;
+    --sidebar-primary-foreground: 140 20% 8%;
+    --sidebar-accent: 140 15% 16%;
+    --sidebar-accent-foreground: 120 20% 85%;
+    --sidebar-border: 140 15% 20%;
+    --sidebar-ring: 142 70% 45%;
+
+    /* Custom tokens */
+    --success: 142 70% 45%;
+    --warning: 45 90% 55%;
+    --danger: 0 70% 55%;
+    --info: 180 50% 50%;
+    --lavender: 280 60% 65%;
+    --maple: 0 70% 55%;
+    --sunflower: 45 90% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
