@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/dashboard/Navbar';
 import Sidebar from '@/components/dashboard/Sidebar';
-import StatsCards from '@/components/dashboard/StatsCards';
 import MapView from '@/components/dashboard/MapView';
 import { BiomeId, DashboardTab, Filters } from '@/types/dashboard';
 import { getDetections, getLabels, getStats } from '@/lib/dashboardApi';
@@ -101,7 +100,6 @@ const Index = () => {
               Could not load dashboard data from DGIS database. Ensure the API server is running and DGIS.db exists.
             </div>
           )}
-          <StatsCards stats={statsQuery.data} isLoading={statsQuery.isLoading} hasLiveData={hasLiveDatabaseData} />
           <MapView
             activeTab={activeTab}
             detections={detectionsQuery.data || []}
@@ -109,6 +107,8 @@ const Index = () => {
             isLoading={detectionsQuery.isLoading}
             hasLiveData={hasLiveDatabaseData}
             biomeLabel={activeBiome.label}
+            stats={statsQuery.data}
+            isLoadingStats={statsQuery.isLoading}
           />
         </main>
       </div>

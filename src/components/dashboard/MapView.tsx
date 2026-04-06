@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { DashboardLabel, DashboardTab, Detection } from '@/types/dashboard';
+import { DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
 import { getLabelColorClass, getLabelShadowClass } from '@/lib/labelColors';
 import { Plus, Minus, Locate } from 'lucide-react';
+import StatsCards from '@/components/dashboard/StatsCards';
 
 interface MapViewProps {
   activeTab: DashboardTab;
@@ -9,10 +10,21 @@ interface MapViewProps {
   labels: DashboardLabel[];
   hasLiveData: boolean;
   biomeLabel: string;
+  stats?: DashboardStats;
+  isLoadingStats?: boolean;
   isLoading?: boolean;
 }
 
-const MapView = ({ activeTab, detections, labels, hasLiveData, biomeLabel, isLoading = false }: MapViewProps) => {
+const MapView = ({
+  activeTab,
+  detections,
+  labels,
+  hasLiveData,
+  biomeLabel,
+  stats,
+  isLoadingStats = false,
+  isLoading = false,
+}: MapViewProps) => {
   const [hoveredDetection, setHoveredDetection] = useState<Detection | null>(null);
   const [zoom, setZoom] = useState(1);
 
@@ -47,6 +59,11 @@ const MapView = ({ activeTab, detections, labels, hasLiveData, biomeLabel, isLoa
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234ade80' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}
       />
+
+      {/* Stats cards overlaid on the map */}
+      <div className="absolute top-4 left-4 right-4 z-20">
+        <StatsCards stats={stats} isLoading={isLoadingStats} hasLiveData={hasLiveData} />
+      </div>
 
       {/* Markers */}
       <div className="absolute inset-0" style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}>
