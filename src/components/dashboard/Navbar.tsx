@@ -1,4 +1,4 @@
-import { BarChart3, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { BiomeId, BiomeOption, DashboardTab } from '@/types/dashboard';
@@ -34,20 +34,18 @@ const Navbar = ({ activeTab, onTabChange, selectedBiome, biomeOptions, onBiomeCh
           </PopoverTrigger>
           <PopoverContent align="start" className="w-[90vw] max-w-[420px] p-3">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Select Map</p>
-            <div className="overflow-x-auto pb-1">
-              <ToggleGroup
-                type="single"
-                value={selectedBiome}
-                onValueChange={(value) => value && onBiomeChange(value as BiomeId)}
-                className="w-max justify-start"
-              >
-                {biomeOptions.map((biome) => (
-                  <ToggleGroupItem key={biome.id} value={biome.id} className="rounded-full whitespace-nowrap px-3 text-xs h-8">
-                    {biome.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
+            <ToggleGroup
+              type="single"
+              value={selectedBiome}
+              onValueChange={(value) => value && onBiomeChange(value as BiomeId)}
+              className="w-full flex-col items-stretch justify-start gap-1"
+            >
+              {biomeOptions.map((biome) => (
+                <ToggleGroupItem key={biome.id} value={biome.id} className="h-8 w-full justify-start rounded-md px-3 text-xs">
+                  {biome.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
             <p className="text-[11px] text-muted-foreground mt-2">Only Temperate Forest currently has live database detections and stats.</p>
           </PopoverContent>
         </Popover>
@@ -73,7 +71,7 @@ const Navbar = ({ activeTab, onTabChange, selectedBiome, biomeOptions, onBiomeCh
       </div>
 
       <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-        <BarChart3 className="w-4 h-4" />
+        <img src="/icons/Statistics%20Dashboard.svg" alt="Statistics Dashboard Icon" className="w-5 h-5" />
         Statistics Dashboard
       </button>
     </header>
