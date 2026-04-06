@@ -1,35 +1,86 @@
-import { Species, Detection } from '@/types/dashboard';
+import { BiomeId, BiomeLabelCatalog, BiomeOption, DashboardLabel, DashboardStats, DashboardTab, LabelGroup } from '@/types/dashboard';
 
-export const species: Species[] = [
-  { id: 'maple', name: 'Maple', type: 'tree', color: 'maple', count: 280 },
-  { id: 'oak', name: 'Oak', type: 'tree', color: 'sunflower', count: 124 },
-  { id: 'pine', name: 'Pine', type: 'tree', color: 'success', count: 67 },
-  { id: 'lavender', name: 'Lavender', type: 'plant', color: 'lavender', count: 842 },
-  { id: 'sunflower', name: 'Sunflower', type: 'plant', color: 'sunflower', count: 85 },
-  { id: 'loropetalum', name: 'Loropetalum chinense', type: 'plant', color: 'maple', count: 92 },
+export const BIOME_OPTIONS: BiomeOption[] = [
+  { id: 'temperate-forest', label: 'Temperate Forest', hasDatabaseData: true },
+  { id: 'boreal-forest', label: 'Boreal Forest', hasDatabaseData: false },
+  { id: 'coastal-desert', label: 'Coastal Desert', hasDatabaseData: false },
+  { id: 'mountain', label: 'Mountain', hasDatabaseData: false },
+  { id: 'plains', label: 'Plains', hasDatabaseData: false },
+  { id: 'subtropical-desert', label: 'Subtropical Desert', hasDatabaseData: false },
 ];
 
-function rand(min: number, max: number) {
-  return Math.round((Math.random() * (max - min) + min) * 10) / 10;
+export const BIOME_LABEL_CATALOG: Record<BiomeId, BiomeLabelCatalog> = {
+  'temperate-forest': {
+    fauna: ['Wood Frog', 'White-tailed Deer', 'Red Fox', 'Raccoon', 'American Black Bear'],
+    flora: {
+      trees: ['Hickory', 'Maple'],
+      plants: [],
+    },
+  },
+  'boreal-forest': {
+    fauna: ['Beaver', 'Lynx', 'Marten', 'Squirrel', 'Warbler', 'Woodpecker'],
+    flora: {
+      trees: ['Birch Tree', 'Conifer'],
+      plants: [],
+    },
+  },
+  'coastal-desert': {
+    fauna: ['Desert Bighorn Sheep', 'Desert Tortoise', 'Desert Gazelle', 'Pelican', 'Rattlesnake', 'Seabird'],
+    flora: {
+      trees: ['Desert Willow'],
+      plants: ['Agave', 'Cactus'],
+    },
+  },
+  mountain: {
+    fauna: ['Alpine Marmot', 'Elk', 'Golden Eagle', 'Grizzly Bear', 'Mountain Lion'],
+    flora: {
+      trees: ['Conifer'],
+      plants: ['Edelweiss', 'Heather', 'Rhododendron'],
+    },
+  },
+  plains: {
+    fauna: [
+      'Bison',
+      'Black-footed Ferret',
+      'Burrowing Owl',
+      'Hyena',
+      'Lion',
+      'Ornate Box Turtle',
+      'Pipit',
+      'Plains Elephant',
+      'Quail',
+      'Zebra',
+    ],
+    flora: {
+      trees: [],
+      plants: ['Buffalograss'],
+    },
+  },
+  'subtropical-desert': {
+    fauna: ['Jerboa', 'Desert Scorpions', 'Fennec Fox', 'Dromedary Camel', 'Gecko', 'Horned Lizard'],
+    flora: {
+      trees: ['Date Palm'],
+      plants: ['Aloe Vera Plant', 'Salvia Plant'],
+    },
+  },
+};
+
+function toLabels(names: string[], group: LabelGroup): DashboardLabel[] {
+  return names.map((name) => ({ name, group, count: 0 }));
 }
 
-export const detections: Detection[] = Array.from({ length: 80 }, (_, i) => {
-  const sp = species[i % species.length];
-  return {
-    id: `d-${i}`,
-    speciesId: sp.id,
-    x: rand(3, 97),
-    y: rand(5, 95),
-    confidence: rand(75, 99),
-    xAxis: rand(0, 10),
-    yAxis: rand(20, 60),
-    zAxis: rand(10, 50),
-  };
-});
+export function getBiomeLabels(biome: BiomeId, tab: DashboardTab): DashboardLabel[] {
+  const config = BIOME_LABEL_CATALOG[biome];
+  if (tab === 'fauna') {
+    return toLabels(config.fauna, 'fauna');
+  }
 
-export const stats = {
-  totalDetections: 1190,
-  totalTrees: 282,
-  totalPlants: 908,
-  areaScanned: 2.4,
+  return [...toLabels(config.flora.trees, 'trees'), ...toLabels(config.flora.plants, 'plants')];
+}
+
+export const BIOME_NO_DATA_STATS: DashboardStats = {
+  totalDetections: 0,
+  totalTrees: 0,
+  totalPlants: '--',
+  areaScanned: 0,
 };

@@ -1,11 +1,33 @@
 export type DashboardTab = 'flora' | 'fauna';
 
-export type LabelGroup = 'trees' | 'fauna';
+export type BiomeId =
+  | 'temperate-forest'
+  | 'boreal-forest'
+  | 'coastal-desert'
+  | 'mountain'
+  | 'plains'
+  | 'subtropical-desert';
+
+export interface BiomeOption {
+  id: BiomeId;
+  label: string;
+  hasDatabaseData: boolean;
+}
+
+export type LabelGroup = 'trees' | 'plants' | 'fauna';
 
 export interface DashboardLabel {
   name: string;
   group: LabelGroup;
   count: number;
+}
+
+export interface BiomeLabelCatalog {
+  fauna: string[];
+  flora: {
+    trees: string[];
+    plants: string[];
+  };
 }
 
 export interface Detection {

@@ -4,6 +4,7 @@ interface DetectionsQuery {
   category: DashboardTab;
   labels: string[];
   confidenceMin: number;
+  biome?: string;
   dateFrom?: string;
   dateTo?: string;
 }

@@ -4,11 +4,13 @@ import Navbar from '@/components/dashboard/Navbar';
 import Sidebar from '@/components/dashboard/Sidebar';
 import StatsCards from '@/components/dashboard/StatsCards';
 import MapView from '@/components/dashboard/MapView';
-import { DashboardTab, Filters } from '@/types/dashboard';
+import { BiomeId, DashboardTab, Filters } from '@/types/dashboard';
 import { getDetections, getLabels, getStats } from '@/lib/dashboardApi';
+import { BIOME_NO_DATA_STATS, BIOME_OPTIONS, getBiomeLabels } from '@/data/mockData';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('flora');
+  const [selectedBiome, setSelectedBiome] = useState<BiomeId>('temperate-forest');
   const [filters, setFilters] = useState<Filters>({
     dateFrom: '',
     dateTo: '',
@@ -16,10 +18,25 @@ const Index = () => {
     selectedLabels: [],
   });
 
+  const activeBiome = useMemo(
+    () => BIOME_OPTIONS.find((biome) => biome.id === selectedBiome) ?? BIOME_OPTIONS[0],
+    [selectedBiome]
+  );
+  const hasLiveDatabaseData = activeBiome.hasDatabaseData;
+
   const labelsQuery = useQuery({
-    queryKey: ['dashboard-labels', activeTab],
-    queryFn: () => getLabels(activeTab),
+    queryKey: ['dashboard-labels', selectedBiome, activeTab],
+    queryFn: () => (hasLiveDatabaseData ? getLabels(activeTab) : Promise.resolve(getBiomeLabels(selectedBiome, activeTab))),
   });
+
+  useEffect(() => {
+    setFilters({
+      dateFrom: '',
+      dateTo: '',
+      confidenceMin: 81,
+      selectedLabels: [],
+    });
+  }, [selectedBiome]);
 
   useEffect(() => {
     if (!labelsQuery.data) {
@@ -34,7 +51,7 @@ const Index = () => {
       }
       return { ...previous, selectedLabels: labelsQuery.data.map((label) => label.name) };
     });
-  }, [activeTab, labelsQuery.data]);
+  }, [labelsQuery.data]);
 
   const detectionsQueryParams = useMemo(
     () => ({
@@ -43,28 +60,36 @@ const Index = () => {
       confidenceMin: filters.confidenceMin,
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
+      biome: selectedBiome,
     }),
-    [activeTab, filters.confidenceMin, filters.dateFrom, filters.dateTo, filters.selectedLabels]
+    [activeTab, filters.confidenceMin, filters.dateFrom, filters.dateTo, filters.selectedLabels, selectedBiome]
   );
 
   const detectionsQuery = useQuery({
     queryKey: ['dashboard-detections', detectionsQueryParams],
-    queryFn: () => getDetections(detectionsQueryParams),
+    queryFn: () => (hasLiveDatabaseData ? getDetections(detectionsQueryParams) : Promise.resolve([])),
   });
 
   const statsQuery = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: getStats,
+    queryKey: ['dashboard-stats', selectedBiome],
+    queryFn: () => (hasLiveDatabaseData ? getStats() : Promise.resolve(BIOME_NO_DATA_STATS)),
   });
 
-  const hasApiError = labelsQuery.isError || detectionsQuery.isError || statsQuery.isError;
+  const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Navbar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        selectedBiome={selectedBiome}
+        biomeOptions={BIOME_OPTIONS}
+        onBiomeChange={setSelectedBiome}
+      />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           activeTab={activeTab}
+          selectedBiome={selectedBiome}
           labels={labelsQuery.data || []}
           isLoadingLabels={labelsQuery.isLoading}
           filters={filters}
@@ -76,8 +101,15 @@ const Index = () => {
               Could not load dashboard data from DGIS database. Ensure the API server is running and DGIS.db exists.
             </div>
           )}
-          <StatsCards stats={statsQuery.data} isLoading={statsQuery.isLoading} />
-          <MapView activeTab={activeTab} detections={detectionsQuery.data || []} isLoading={detectionsQuery.isLoading} />
+          <StatsCards stats={statsQuery.data} isLoading={statsQuery.isLoading} hasLiveData={hasLiveDatabaseData} />
+          <MapView
+            activeTab={activeTab}
+            detections={detectionsQuery.data || []}
+            labels={labelsQuery.data || []}
+            isLoading={detectionsQuery.isLoading}
+            hasLiveData={hasLiveDatabaseData}
+            biomeLabel={activeBiome.label}
+          />
         </main>
       </div>
     </div>

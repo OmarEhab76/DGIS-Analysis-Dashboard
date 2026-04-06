@@ -1,34 +1,18 @@
 import { useState, useMemo } from 'react';
-import { DashboardTab, Detection } from '@/types/dashboard';
+import { DashboardLabel, DashboardTab, Detection } from '@/types/dashboard';
+import { getLabelColorClass, getLabelShadowClass } from '@/lib/labelColors';
 import { Plus, Minus, Locate } from 'lucide-react';
 
 interface MapViewProps {
   activeTab: DashboardTab;
   detections: Detection[];
+  labels: DashboardLabel[];
+  hasLiveData: boolean;
+  biomeLabel: string;
   isLoading?: boolean;
 }
 
-const colorClasses: Record<string, string> = {
-  Hickory: 'bg-success',
-  Maple: 'bg-maple',
-  'Wood Frog': 'bg-success',
-  'White-tailed Deer': 'bg-sunflower',
-  'Red Fox': 'bg-maple',
-  Raccoon: 'bg-lavender',
-  'American Black Bear': 'bg-primary',
-};
-
-const shadowClasses: Record<string, string> = {
-  Hickory: 'shadow-[0_0_8px_hsl(var(--success))]',
-  Maple: 'shadow-[0_0_8px_hsl(var(--danger))]',
-  'Wood Frog': 'shadow-[0_0_8px_hsl(var(--success))]',
-  'White-tailed Deer': 'shadow-[0_0_8px_hsl(var(--warning))]',
-  'Red Fox': 'shadow-[0_0_8px_hsl(var(--danger))]',
-  Raccoon: 'shadow-[0_0_8px_hsl(var(--lavender))]',
-  'American Black Bear': 'shadow-[0_0_8px_hsl(var(--primary))]',
-};
-
-const MapView = ({ activeTab, detections, isLoading = false }: MapViewProps) => {
+const MapView = ({ activeTab, detections, labels, hasLiveData, biomeLabel, isLoading = false }: MapViewProps) => {
   const [hoveredDetection, setHoveredDetection] = useState<Detection | null>(null);
   const [zoom, setZoom] = useState(1);
 
@@ -37,10 +21,11 @@ const MapView = ({ activeTab, detections, isLoading = false }: MapViewProps) => 
       activeTab === 'flora'
         ? ['Hickory', 'Maple']
         : ['Wood Frog', 'White-tailed Deer', 'Red Fox', 'Raccoon', 'American Black Bear'];
-    const names = Array.from(new Set(detections.map((item) => item.name)));
-    const source = names.length > 0 ? names : fallback;
-    return source.map((name) => ({ name, color: colorClasses[name] || 'bg-primary' }));
-  }, [activeTab, detections]);
+    const detectionNames = Array.from(new Set(detections.map((item) => item.name)));
+    const labelNames = Array.from(new Set(labels.map((item) => item.name)));
+    const source = detectionNames.length > 0 ? detectionNames : labelNames.length > 0 ? labelNames : fallback;
+    return source.map((name) => ({ name, color: getLabelColorClass(name) }));
+  }, [activeTab, detections, labels]);
 
   return (
     <div className="relative flex-1 rounded-xl overflow-hidden bg-[hsl(140,25%,15%)] border border-border">
@@ -69,7 +54,7 @@ const MapView = ({ activeTab, detections, isLoading = false }: MapViewProps) => 
           detections.map((d) => (
             <div
               key={d.id}
-              className={`absolute w-3 h-3 rounded-full cursor-pointer transition-transform hover:scale-150 ${colorClasses[d.name] || 'bg-primary'} ${shadowClasses[d.name] || ''}`}
+              className={`absolute w-3 h-3 rounded-full cursor-pointer transition-transform hover:scale-150 ${getLabelColorClass(d.name)} ${getLabelShadowClass(d.name)}`}
               style={{ left: `${d.percentX}%`, top: `${d.percentY}%`, transform: 'translate(-50%, -50%)' }}
               onMouseEnter={() => setHoveredDetection(d)}
               onMouseLeave={() => setHoveredDetection(null)}
@@ -80,6 +65,15 @@ const MapView = ({ activeTab, detections, isLoading = false }: MapViewProps) => 
       {isLoading && (
         <div className="absolute inset-0 grid place-items-center text-sm text-foreground bg-background/20">
           Loading detections...
+        </div>
+      )}
+
+      {!isLoading && !hasLiveData && (
+        <div className="absolute inset-0 grid place-items-center text-center px-6 bg-background/20">
+          <div className="max-w-sm rounded-lg border border-border bg-card/90 px-4 py-3">
+            <p className="text-sm font-semibold text-foreground">No detection data yet for {biomeLabel}</p>
+            <p className="text-xs text-muted-foreground mt-1">Labels are available for exploration, but database observations for this map are not connected yet.</p>
+          </div>
         </div>
       )}
 

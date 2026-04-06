@@ -1,16 +1,18 @@
 import { useCallback } from 'react';
 import { Download } from 'lucide-react';
-import { DashboardLabel, DashboardTab, Filters } from '@/types/dashboard';
+import { getLabelColorClass } from '@/lib/labelColors';
+import { BiomeId, DashboardLabel, DashboardTab, Filters } from '@/types/dashboard';
 
 interface SidebarProps {
   activeTab: DashboardTab;
+  selectedBiome: BiomeId;
   labels: DashboardLabel[];
   isLoadingLabels?: boolean;
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
 }
 
-const Sidebar = ({ activeTab, labels, filters, onFiltersChange, isLoadingLabels = false }: SidebarProps) => {
+const Sidebar = ({ activeTab, selectedBiome, labels, filters, onFiltersChange, isLoadingLabels = false }: SidebarProps) => {
   const toggleLabel = useCallback(
     (name: string) => {
       const selected = filters.selectedLabels.includes(name)
@@ -21,24 +23,22 @@ const Sidebar = ({ activeTab, labels, filters, onFiltersChange, isLoadingLabels 
     [filters, onFiltersChange]
   );
 
-  const colorMap: Record<string, string> = {
-    'Hickory': 'bg-success',
-    'Maple': 'bg-maple',
-    'Wood Frog': 'bg-success',
-    'White-tailed Deer': 'bg-sunflower',
-    'Red Fox': 'bg-maple',
-    'Raccoon': 'bg-lavender',
-    'American Black Bear': 'bg-primary',
-  };
+  const sectionTitle = activeTab === 'flora' ? 'Flora' : 'Fauna';
+  const mapName = selectedBiome
+    .split('-')
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(' ');
 
-  const sectionTitle = activeTab === 'flora' ? 'Trees' : 'Fauna';
+  const faunaLabels = labels.filter((label) => label.group === 'fauna');
+  const treeLabels = labels.filter((label) => label.group === 'trees');
+  const plantLabels = labels.filter((label) => label.group === 'plants');
 
   const renderLabelList = (items: DashboardLabel[]) =>
     items.map((s) => (
       <label key={s.name} className="flex items-center justify-between py-1 cursor-pointer group">
         <div className="flex items-center gap-2">
           <div className={`relative w-4 h-4 rounded border border-border flex items-center justify-center transition-colors ${
-            filters.selectedLabels.includes(s.name) ? colorMap[s.name] || 'bg-primary' : 'bg-secondary'
+            filters.selectedLabels.includes(s.name) ? getLabelColorClass(s.name) : 'bg-secondary'
           }`}>
             <input
               type="checkbox"
@@ -63,6 +63,7 @@ const Sidebar = ({ activeTab, labels, filters, onFiltersChange, isLoadingLabels 
       <div>
         <h2 className="text-sm font-semibold text-foreground">Filters</h2>
         <p className="text-xs text-muted-foreground">Refine your analysis parameters</p>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">Map: {mapName}</p>
       </div>
 
       {/* Date Range */}
@@ -116,7 +117,23 @@ const Sidebar = ({ activeTab, labels, filters, onFiltersChange, isLoadingLabels 
         <h3 className="text-xs font-semibold text-foreground mb-1">{sectionTitle}</h3>
         {isLoadingLabels && <p className="text-xs text-muted-foreground">Loading labels...</p>}
         {!isLoadingLabels && labels.length === 0 && <p className="text-xs text-muted-foreground">No labels available.</p>}
-        {!isLoadingLabels && renderLabelList(labels)}
+        {!isLoadingLabels && activeTab === 'fauna' && renderLabelList(faunaLabels)}
+        {!isLoadingLabels && activeTab === 'flora' && (
+          <div className="space-y-2">
+            {treeLabels.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Trees</p>
+                {renderLabelList(treeLabels)}
+              </div>
+            )}
+            {plantLabels.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Plants</p>
+                {renderLabelList(plantLabels)}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <button className="mt-auto flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
