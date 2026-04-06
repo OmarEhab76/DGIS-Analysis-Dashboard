@@ -1,4 +1,4 @@
-import { BarChart3, ChevronDown, Flower2, TreePine } from 'lucide-react';
+import { BarChart3, ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { BiomeId, BiomeOption, DashboardTab } from '@/types/dashboard';
@@ -17,8 +17,8 @@ const Navbar = ({ activeTab, onTabChange, selectedBiome, biomeOptions, onBiomeCh
   return (
     <header className="flex items-center justify-between px-4 py-2 bg-card border-b border-border">
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-          <TreePine className="w-4 h-4 text-primary-foreground" />
+        <div className="w-8 h-8 flex items-center justify-center">
+          <img src="/icons/DGIS%20Icon.svg" alt="DGIS Icon" className="w-6 h-6" />
         </div>
         <span className="font-bold text-foreground text-sm">DGIS Dashboard</span>
       </div>
@@ -27,7 +27,7 @@ const Navbar = ({ activeTab, onTabChange, selectedBiome, biomeOptions, onBiomeCh
         <Popover>
           <PopoverTrigger asChild>
             <button className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm hover:bg-secondary/80 transition-colors">
-              <TreePine className="w-4 h-4 text-primary" />
+              <img src="/icons/Map%20Icon.svg" alt="Map Icon" className="w-5 h-5" />
               {activeBiome.label}
               <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
@@ -59,7 +59,7 @@ const Navbar = ({ activeTab, onTabChange, selectedBiome, biomeOptions, onBiomeCh
               activeTab === 'flora' ? 'bg-primary text-primary-foreground' : 'text-secondary-foreground'
             }`}
           >
-            <Flower2 className="w-4 h-4" /> Flora
+            <img src="/icons/Flora.svg" alt="Flora Icon" className="w-5 h-5" /> Flora
           </button>
           <button
             onClick={() => onTabChange('fauna')}
@@ -67,7 +67,7 @@ const Navbar = ({ activeTab, onTabChange, selectedBiome, biomeOptions, onBiomeCh
               activeTab === 'fauna' ? 'bg-primary text-primary-foreground' : 'text-secondary-foreground'
             }`}
           >
-            <TreePine className="w-4 h-4" /> Fauna
+            <img src="/icons/Fauna.svg" alt="Fauna Icon" className="w-5 h-5" /> Fauna
           </button>
         </div>
       </div>

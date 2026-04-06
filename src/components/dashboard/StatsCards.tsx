@@ -1,4 +1,3 @@
-import { Scan, TreePine, Flower2, Map } from 'lucide-react';
 import { DashboardStats } from '@/types/dashboard';
 
 interface StatsCardsProps {
@@ -14,21 +13,26 @@ const StatsCards = ({ stats, isLoading = false, hasLiveData = true }: StatsCards
     {
       label: 'Total Detections',
       value: showNoData ? '--' : stats ? stats.totalDetections.toLocaleString() : '--',
-      icon: Scan,
+      iconSrc: '/icons/Total Detections.svg',
       color: 'text-primary',
     },
     {
       label: 'Total Trees',
       value: showNoData ? '--' : stats ? stats.totalTrees.toLocaleString() : '--',
-      icon: TreePine,
+      iconSrc: '/icons/Total Trees.svg',
       color: 'text-primary',
     },
-    { label: 'Total Plants', value: showNoData ? '--' : stats ? stats.totalPlants : '-', icon: Flower2, color: 'text-primary' },
+    {
+      label: 'Total Plants',
+      value: showNoData ? '--' : stats ? stats.totalPlants : '-',
+      iconSrc: '/icons/Total Plants.svg',
+      color: 'text-primary',
+    },
     {
       label: 'Area Scanned',
       value: showNoData ? '--' : stats ? `${stats.areaScanned}` : '--',
       unit: showNoData ? undefined : 'km²',
-      icon: Map,
+      iconSrc: '/icons/Area Scanned.svg',
       color: 'text-primary',
     },
   ];
@@ -45,7 +49,7 @@ const StatsCards = ({ stats, isLoading = false, hasLiveData = true }: StatsCards
                 {c.unit && <span className="text-sm font-normal text-muted-foreground ml-1">{c.unit}</span>}
               </p>
             </div>
-            <c.icon className={`w-6 h-6 ${c.color} opacity-60`} />
+            <img src={c.iconSrc} alt={`${c.label} Icon`} className={`w-6 h-6 ${c.color} opacity-60`} />
           </div>
         ))}
       </div>
