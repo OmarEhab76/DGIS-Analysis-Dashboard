@@ -17,8 +17,16 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function getLabels(category: DashboardTab) {
-  return fetchJson<{ labels: DashboardLabel[] }>(`/api/labels?category=${category}`).then((data) => data.labels);
+export function getLabels(category: DashboardTab, biome?: string) {
+  const search = new URLSearchParams({
+    category,
+  });
+
+  if (biome) {
+    search.set('biome', biome);
+  }
+
+  return fetchJson<{ labels: DashboardLabel[] }>(`/api/labels?${search.toString()}`).then((data) => data.labels);
 }
 
 export function getDetections(query: DetectionsQuery) {
@@ -34,10 +42,20 @@ export function getDetections(query: DetectionsQuery) {
   if (query.dateTo) {
     search.set('dateTo', query.dateTo);
   }
+  if (query.biome) {
+    search.set('biome', query.biome);
+  }
 
   return fetchJson<{ detections: Detection[] }>(`/api/detections?${search.toString()}`).then((data) => data.detections);
 }
 
-export function getStats() {
-  return fetchJson<{ stats: DashboardStats }>('/api/stats').then((data) => data.stats);
+export function getStats(biome?: string) {
+  const search = new URLSearchParams();
+  if (biome) {
+    search.set('biome', biome);
+  }
+
+  const suffix = search.toString();
+  const url = suffix.length > 0 ? `/api/stats?${suffix}` : '/api/stats';
+  return fetchJson<{ stats: DashboardStats }>(url).then((data) => data.stats);
 }

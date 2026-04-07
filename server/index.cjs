@@ -7,11 +7,57 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const FLORA_LABELS = ['Hickory', 'Maple'];
-const FAUNA_LABELS = ['Wood Frog', 'White-tailed Deer', 'Red Fox', 'Raccoon', 'American Black Bear'];
+const BIOME_CONFIG = {
+  'temperate-forest': {
+    dbPath: process.env.DGIS_DB_PATH || path.resolve(process.cwd(), 'DGIS.db'),
+    labels: {
+      flora: ['Hickory', 'Maple'],
+      fauna: ['Wood Frog', 'White-tailed Deer', 'Red Fox', 'Raccoon', 'American Black Bear'],
+    },
+  },
+  'boreal-forest': {
+    dbPath: path.resolve(process.cwd(), 'DGIS_Boreal.db'),
+    labels: {
+      flora: ['Birch Tree', 'Conifer'],
+      fauna: ['Beaver', 'Lynx', 'Marten', 'Squirrel', 'Warbler', 'Woodpecker'],
+    },
+  },
+};
 
-function getCategoryLabels(category) {
-  return category === 'fauna' ? FAUNA_LABELS : FLORA_LABELS;
+const DEFAULT_BIOME = 'temperate-forest';
+const dbCache = new Map();
+
+function resolveBiome(rawBiome) {
+  const biome = String(rawBiome || '').trim();
+  if (!biome) {
+    return DEFAULT_BIOME;
+  }
+
+  return BIOME_CONFIG[biome] ? biome : null;
+}
+
+function getCategoryLabels(biome, category) {
+  const config = BIOME_CONFIG[biome] || BIOME_CONFIG[DEFAULT_BIOME];
+  return category === 'fauna' ? config.labels.fauna : config.labels.flora;
+}
+
+function getDbForBiome(biome) {
+  const config = BIOME_CONFIG[biome];
+  if (!config) {
+    return { db: null, error: new Error(`Unsupported biome: ${biome}`), dbPath: '' };
+  }
+
+  if (dbCache.has(biome)) {
+    return { db: dbCache.get(biome), error: null, dbPath: config.dbPath };
+  }
+
+  try {
+    const db = new Database(config.dbPath, { readonly: true, fileMustExist: true });
+    dbCache.set(biome, db);
+    return { db, error: null, dbPath: config.dbPath };
+  } catch (error) {
+    return { db: null, error, dbPath: config.dbPath };
+  }
 }
 
 function isValidDate(value) {
@@ -25,29 +71,36 @@ function normalize(value, min, max) {
   return ((value - min) / (max - min)) * 100;
 }
 
-const dbPath = process.env.DGIS_DB_PATH || path.resolve(process.cwd(), 'DGIS.db');
-let db;
-
-try {
-  db = new Database(dbPath, { readonly: true, fileMustExist: true });
-} catch (error) {
-  console.error('Failed to open database:', error);
-}
-
 app.get('/api/health', (_req, res) => {
+  const databaseStatus = Object.keys(BIOME_CONFIG).map((biome) => {
+    const { db, error, dbPath } = getDbForBiome(biome);
+    return {
+      biome,
+      ok: Boolean(db),
+      databasePath: dbPath,
+      error: error ? String(error.message || error) : null,
+    };
+  });
+
   res.json({
-    ok: Boolean(db),
-    databasePath: dbPath,
+    ok: databaseStatus.every((item) => item.ok),
+    databases: databaseStatus,
   });
 });
 
 app.get('/api/labels', (req, res) => {
+  const biome = resolveBiome(req.query.biome);
+  if (!biome) {
+    return res.status(400).json({ error: `Unsupported biome: ${String(req.query.biome || '')}` });
+  }
+
+  const { db, error, dbPath } = getDbForBiome(biome);
   if (!db) {
-    return res.status(500).json({ error: 'Database is not available' });
+    return res.status(500).json({ error: `Database is not available for ${biome}: ${dbPath}`, details: String(error?.message || error || '') });
   }
 
   const category = req.query.category === 'fauna' ? 'fauna' : 'flora';
-  const labels = getCategoryLabels(category);
+  const labels = getCategoryLabels(biome, category);
 
   const placeholders = labels.map(() => '?').join(',');
   const counts = db
@@ -71,12 +124,18 @@ app.get('/api/labels', (req, res) => {
 });
 
 app.get('/api/detections', (req, res) => {
+  const biome = resolveBiome(req.query.biome);
+  if (!biome) {
+    return res.status(400).json({ error: `Unsupported biome: ${String(req.query.biome || '')}` });
+  }
+
+  const { db, error, dbPath } = getDbForBiome(biome);
   if (!db) {
-    return res.status(500).json({ error: 'Database is not available' });
+    return res.status(500).json({ error: `Database is not available for ${biome}: ${dbPath}`, details: String(error?.message || error || '') });
   }
 
   const category = req.query.category === 'fauna' ? 'fauna' : 'flora';
-  const allowedLabels = getCategoryLabels(category);
+  const allowedLabels = getCategoryLabels(biome, category);
   const labelsParamProvided = req.query.labels !== undefined;
   const requestedLabels = String(req.query.labels || '')
     .split(',')
@@ -162,18 +221,26 @@ app.get('/api/detections', (req, res) => {
   });
 });
 
-app.get('/api/stats', (_req, res) => {
-  if (!db) {
-    return res.status(500).json({ error: 'Database is not available' });
+app.get('/api/stats', (req, res) => {
+  const biome = resolveBiome(req.query.biome);
+  if (!biome) {
+    return res.status(400).json({ error: `Unsupported biome: ${String(req.query.biome || '')}` });
   }
+
+  const { db, error, dbPath } = getDbForBiome(biome);
+  if (!db) {
+    return res.status(500).json({ error: `Database is not available for ${biome}: ${dbPath}`, details: String(error?.message || error || '') });
+  }
+
+  const floraLabels = getCategoryLabels(biome, 'flora');
 
   const totals = db
     .prepare('SELECT COUNT(*) AS totalDetections FROM Observations_new')
     .get();
 
   const treeCount = db
-    .prepare(`SELECT COUNT(*) AS totalTrees FROM Observations_new WHERE Name IN (${FLORA_LABELS.map(() => '?').join(',')})`)
-    .get(...FLORA_LABELS);
+    .prepare(`SELECT COUNT(*) AS totalTrees FROM Observations_new WHERE Name IN (${floraLabels.map(() => '?').join(',')})`)
+    .get(...floraLabels);
 
   return res.json({
     stats: {
@@ -193,5 +260,7 @@ app.use((error, _req, res, _next) => {
 const PORT = Number(process.env.PORT || 3001);
 app.listen(PORT, () => {
   console.log(`DGIS API listening on http://localhost:${PORT}`);
-  console.log(`Using database at ${dbPath}`);
+  Object.entries(BIOME_CONFIG).forEach(([biome, config]) => {
+    console.log(`Configured ${biome} database at ${config.dbPath}`);
+  });
 });

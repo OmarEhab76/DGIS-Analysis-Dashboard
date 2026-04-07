@@ -10,6 +10,7 @@ interface MapViewProps {
   labels: DashboardLabel[];
   hasLiveData: boolean;
   biomeLabel: string;
+  emptyDbFile?: string;
   stats?: DashboardStats;
   isLoadingStats?: boolean;
   isLoading?: boolean;
@@ -21,6 +22,7 @@ const MapView = ({
   labels,
   hasLiveData,
   biomeLabel,
+  emptyDbFile,
   stats,
   isLoadingStats = false,
   isLoading = false,
@@ -38,6 +40,9 @@ const MapView = ({
     const source = detectionNames.length > 0 ? detectionNames : labelNames.length > 0 ? labelNames : fallback;
     return source.map((name) => ({ name, color: getLabelColorClass(name) }));
   }, [activeTab, detections, labels]);
+
+  const hasNoDatabaseObservations =
+    hasLiveData && !isLoading && !isLoadingStats && Number(stats?.totalDetections ?? 0) === 0;
 
   return (
     <div className="relative flex-1 rounded-xl overflow-hidden bg-[hsl(140,25%,15%)] border border-border">
@@ -90,6 +95,17 @@ const MapView = ({
           <div className="max-w-sm rounded-lg border border-border bg-card/90 px-4 py-3">
             <p className="text-sm font-semibold text-foreground">No detection data yet for {biomeLabel}</p>
             <p className="text-xs text-muted-foreground mt-1">Labels are available for exploration, but database observations for this map are not connected yet.</p>
+          </div>
+        </div>
+      )}
+
+      {hasNoDatabaseObservations && (
+        <div className="absolute inset-0 grid place-items-center text-center px-6 bg-background/20">
+          <div className="max-w-sm rounded-lg border border-border bg-card/90 px-4 py-3">
+            <p className="text-sm font-semibold text-foreground">No observations yet for {biomeLabel}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {emptyDbFile ? `${emptyDbFile} does not contain records yet.` : 'This biome database does not contain records yet.'}
+            </p>
           </div>
         </div>
       )}

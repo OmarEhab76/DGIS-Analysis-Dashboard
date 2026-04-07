@@ -22,10 +22,12 @@ const Index = () => {
     [selectedBiome]
   );
   const hasLiveDatabaseData = activeBiome.hasDatabaseData;
+  const expectedDbFile = selectedBiome === 'boreal-forest' ? 'DGIS_Boreal.db' : 'DGIS.db';
 
   const labelsQuery = useQuery({
     queryKey: ['dashboard-labels', selectedBiome, activeTab],
-    queryFn: () => (hasLiveDatabaseData ? getLabels(activeTab) : Promise.resolve(getBiomeLabels(selectedBiome, activeTab))),
+    queryFn: () =>
+      hasLiveDatabaseData ? getLabels(activeTab, selectedBiome) : Promise.resolve(getBiomeLabels(selectedBiome, activeTab)),
   });
 
   useEffect(() => {
@@ -71,7 +73,7 @@ const Index = () => {
 
   const statsQuery = useQuery({
     queryKey: ['dashboard-stats', selectedBiome],
-    queryFn: () => (hasLiveDatabaseData ? getStats() : Promise.resolve(BIOME_NO_DATA_STATS)),
+    queryFn: () => (hasLiveDatabaseData ? getStats(selectedBiome) : Promise.resolve(BIOME_NO_DATA_STATS)),
   });
 
   const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
@@ -97,7 +99,7 @@ const Index = () => {
         <main className="flex-1 flex flex-col gap-3 p-3 overflow-hidden">
           {hasApiError && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              Could not load dashboard data from DGIS database. Ensure the API server is running and DGIS.db exists.
+              Could not load dashboard data for {activeBiome.label}. Ensure the API server is running and {expectedDbFile} exists.
             </div>
           )}
           <MapView
@@ -107,6 +109,7 @@ const Index = () => {
             isLoading={detectionsQuery.isLoading}
             hasLiveData={hasLiveDatabaseData}
             biomeLabel={activeBiome.label}
+            emptyDbFile={expectedDbFile}
             stats={statsQuery.data}
             isLoadingStats={statsQuery.isLoading}
           />
