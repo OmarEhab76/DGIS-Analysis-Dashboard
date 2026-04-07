@@ -114,7 +114,7 @@ app.get('/api/detections', (req, res) => {
 
   const bounds = db
     .prepare(
-      `SELECT MIN(X) AS minX, MAX(X) AS maxX, MIN(Y) AS minY, MAX(Y) AS maxY
+      `SELECT MIN(X) AS minX, MAX(X) AS maxX, MIN(Z) AS minZ, MAX(Z) AS maxZ
        FROM Observations_new
        WHERE Name IN (${activeLabels.map(() => '?').join(',')})`
     )
@@ -139,13 +139,13 @@ app.get('/api/detections', (req, res) => {
 
   const minX = Number(bounds?.minX ?? 0);
   const maxX = Number(bounds?.maxX ?? 0);
-  const minY = Number(bounds?.minY ?? 0);
-  const maxY = Number(bounds?.maxY ?? 0);
+  const minZ = Number(bounds?.minZ ?? 0);
+  const maxZ = Number(bounds?.maxZ ?? 0);
 
   return res.json({
     detections: rows.map((row) => {
       const px = normalize(Number(row.x), minX, maxX);
-      const py = normalize(Number(row.y), minY, maxY);
+      const py = normalize(Number(row.z ?? 0), minZ, maxZ);
       return {
         id: row.id,
         name: row.name,
