@@ -25,7 +25,7 @@ function normalize(value, min, max) {
   return ((value - min) / (max - min)) * 100;
 }
 
-const dbPath = process.env.DGIS_DB_PATH || path.resolve(process.cwd(), '..', 'DGIS.db');
+const dbPath = process.env.DGIS_DB_PATH || path.resolve(process.cwd(), 'DGIS.db');
 let db;
 
 try {
