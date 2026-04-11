@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { Download } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { getLabelStyle } from '@/lib/labelColors';
-import { BiomeId, DashboardLabel, DashboardTab, Filters } from '@/types/dashboard';
+import { BiomeId, DashboardLabel, DashboardTab, Filters, LabelGroup } from '@/types/dashboard';
 
 interface SidebarProps {
   activeTab: DashboardTab;
@@ -24,6 +25,12 @@ const Sidebar = ({
   isExportDisabled = false,
   onExportReport,
 }: SidebarProps) => {
+  const groupDisplayName: Record<LabelGroup, string> = {
+    trees: 'Trees',
+    plants: 'Plants',
+    fauna: 'Animals',
+  };
+
   const toggleLabel = useCallback(
     (name: string) => {
       const selected = filters.selectedLabels.includes(name)
@@ -34,7 +41,46 @@ const Sidebar = ({
     [filters, onFiltersChange]
   );
 
-  const sectionTitle = activeTab === 'flora' ? 'Flora' : 'Fauna';
+  const toggleGroupLabels = useCallback(
+    (items: DashboardLabel[]) => {
+      const names = items.map((item) => item.name);
+      if (names.length === 0) {
+        return;
+      }
+
+      const allSelected = names.every((name) => filters.selectedLabels.includes(name));
+      const selected = allSelected
+        ? filters.selectedLabels.filter((label) => !names.includes(label))
+        : Array.from(new Set([...filters.selectedLabels, ...names]));
+
+      onFiltersChange({ ...filters, selectedLabels: selected });
+    },
+    [filters, onFiltersChange]
+  );
+
+  const getGroupCheckedState = useCallback(
+    (items: DashboardLabel[]): boolean | 'indeterminate' => {
+      if (items.length === 0) {
+        return false;
+      }
+
+      const selectedCount = items.reduce(
+        (count, item) => (filters.selectedLabels.includes(item.name) ? count + 1 : count),
+        0
+      );
+
+      if (selectedCount === 0) {
+        return false;
+      }
+      if (selectedCount === items.length) {
+        return true;
+      }
+
+      return 'indeterminate';
+    },
+    [filters.selectedLabels]
+  );
+
   const mapName = selectedBiome
     .split('-')
     .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
@@ -44,6 +90,27 @@ const Sidebar = ({
   const treeLabels = labels.filter((label) => label.group === 'trees');
   const plantLabels = labels.filter((label) => label.group === 'plants');
   const labelScope = Array.from(new Set(labels.map((label) => label.name)));
+
+  const renderGroupHeader = (group: LabelGroup, items: DashboardLabel[]) => {
+    const title = groupDisplayName[group];
+
+    return (
+      <div className="flex items-center justify-between mb-1">
+        <button
+          type="button"
+          onClick={() => toggleGroupLabels(items)}
+          className="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {title}
+        </button>
+        <Checkbox
+          aria-label={`Toggle ${title} labels`}
+          checked={getGroupCheckedState(items)}
+          onCheckedChange={() => toggleGroupLabels(items)}
+        />
+      </div>
+    );
+  };
 
   const renderLabelList = (items: DashboardLabel[]) =>
     items.map((s) => {
@@ -133,21 +200,25 @@ const Sidebar = ({
 
       {/* Active category labels */}
       <div>
-        <h3 className="text-xs font-semibold text-foreground mb-1">{sectionTitle}</h3>
         {isLoadingLabels && <p className="text-xs text-muted-foreground">Loading labels...</p>}
         {!isLoadingLabels && labels.length === 0 && <p className="text-xs text-muted-foreground">No labels available.</p>}
-        {!isLoadingLabels && activeTab === 'fauna' && renderLabelList(faunaLabels)}
+        {!isLoadingLabels && activeTab === 'fauna' && (
+          <div>
+            {faunaLabels.length > 0 && renderGroupHeader('fauna', faunaLabels)}
+            {renderLabelList(faunaLabels)}
+          </div>
+        )}
         {!isLoadingLabels && activeTab === 'flora' && (
           <div className="space-y-2">
             {treeLabels.length > 0 && (
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Trees</p>
+                {renderGroupHeader('trees', treeLabels)}
                 {renderLabelList(treeLabels)}
               </div>
             )}
             {plantLabels.length > 0 && (
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Plants</p>
+                {renderGroupHeader('plants', plantLabels)}
                 {renderLabelList(plantLabels)}
               </div>
             )}
