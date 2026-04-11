@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
-import { getLabelColorClass, getLabelShadowClass } from '@/lib/labelColors';
+import { getLabelMarkerStyle, getLabelStyle } from '@/lib/labelColors';
 import { Plus, Minus, Locate } from 'lucide-react';
 import StatsCards from '@/components/dashboard/StatsCards';
 
@@ -30,6 +30,15 @@ const MapView = ({
   const [hoveredDetection, setHoveredDetection] = useState<Detection | null>(null);
   const [zoom, setZoom] = useState(1);
 
+  const labelScope = useMemo(() => {
+    const fallback =
+      activeTab === 'flora'
+        ? ['Hickory', 'Maple']
+        : ['Wood Frog', 'White-tailed Deer', 'Red Fox', 'Raccoon', 'American Black Bear'];
+    const names = Array.from(new Set([...labels.map((item) => item.name), ...detections.map((item) => item.name)]));
+    return names.length > 0 ? names : fallback;
+  }, [activeTab, detections, labels]);
+
   const legendItems = useMemo(() => {
     const fallback =
       activeTab === 'flora'
@@ -38,7 +47,7 @@ const MapView = ({
     const detectionNames = Array.from(new Set(detections.map((item) => item.name)));
     const labelNames = Array.from(new Set(labels.map((item) => item.name)));
     const source = detectionNames.length > 0 ? detectionNames : labelNames.length > 0 ? labelNames : fallback;
-    return source.map((name) => ({ name, color: getLabelColorClass(name) }));
+    return source.map((name) => ({ name }));
   }, [activeTab, detections, labels]);
 
   const hasNoDatabaseObservations =
@@ -76,8 +85,13 @@ const MapView = ({
           detections.map((d) => (
             <div
               key={d.id}
-              className={`absolute w-3 h-3 rounded-full cursor-pointer transition-transform hover:scale-150 ${getLabelColorClass(d.name)} ${getLabelShadowClass(d.name)}`}
-              style={{ left: `${d.percentX}%`, top: `${d.percentY}%`, transform: 'translate(-50%, -50%)' }}
+              className="absolute w-3 h-3 rounded-full cursor-pointer transition-transform hover:scale-150"
+              style={{
+                left: `${d.percentX}%`,
+                top: `${d.percentY}%`,
+                transform: 'translate(-50%, -50%)',
+                ...getLabelMarkerStyle(d.name, labelScope),
+              }}
               onMouseEnter={() => setHoveredDetection(d)}
               onMouseLeave={() => setHoveredDetection(null)}
             />
@@ -151,7 +165,7 @@ const MapView = ({
         <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Legend</p>
         {legendItems.map((item) => (
           <div key={item.name} className="flex items-center gap-2 py-0.5">
-            <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
+            <div className="w-2.5 h-2.5 rounded-full" style={getLabelStyle(item.name, labelScope)} />
             <span className="text-xs text-foreground">{item.name}</span>
           </div>
         ))}

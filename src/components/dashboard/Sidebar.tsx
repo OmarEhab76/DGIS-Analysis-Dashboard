@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Download } from 'lucide-react';
-import { getLabelColorClass } from '@/lib/labelColors';
+import { getLabelStyle } from '@/lib/labelColors';
 import { BiomeId, DashboardLabel, DashboardTab, Filters } from '@/types/dashboard';
 
 interface SidebarProps {
@@ -43,31 +43,39 @@ const Sidebar = ({
   const faunaLabels = labels.filter((label) => label.group === 'fauna');
   const treeLabels = labels.filter((label) => label.group === 'trees');
   const plantLabels = labels.filter((label) => label.group === 'plants');
+  const labelScope = Array.from(new Set(labels.map((label) => label.name)));
 
   const renderLabelList = (items: DashboardLabel[]) =>
-    items.map((s) => (
-      <label key={s.name} className="flex items-center justify-between py-1 cursor-pointer group">
-        <div className="flex items-center gap-2">
-          <div className={`relative w-4 h-4 rounded border border-border flex items-center justify-center transition-colors ${
-            filters.selectedLabels.includes(s.name) ? getLabelColorClass(s.name) : 'bg-secondary'
-          }`}>
-            <input
-              type="checkbox"
-              checked={filters.selectedLabels.includes(s.name)}
-              onChange={() => toggleLabel(s.name)}
-              className="sr-only"
-            />
-            {filters.selectedLabels.includes(s.name) && (
-              <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            )}
+    items.map((s) => {
+      const isSelected = filters.selectedLabels.includes(s.name);
+
+      return (
+        <label key={s.name} className="flex items-center justify-between py-1 cursor-pointer group">
+          <div className="flex items-center gap-2">
+            <div
+              className={`relative w-4 h-4 rounded border border-border flex items-center justify-center transition-colors ${
+                isSelected ? '' : 'bg-secondary'
+              }`}
+              style={isSelected ? getLabelStyle(s.name, labelScope) : undefined}
+            >
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => toggleLabel(s.name)}
+                className="sr-only"
+              />
+              {isSelected && (
+                <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <span className="text-sm text-foreground group-hover:text-primary transition-colors">{s.name}</span>
           </div>
-          <span className="text-sm text-foreground group-hover:text-primary transition-colors">{s.name}</span>
-        </div>
-        <span className="text-xs text-muted-foreground">{s.count}</span>
-      </label>
-    ));
+          <span className="text-xs text-muted-foreground">{s.count}</span>
+        </label>
+      );
+    });
 
   return (
     <aside className="w-56 flex-shrink-0 bg-card border-r border-border p-4 flex flex-col gap-5 overflow-y-auto">

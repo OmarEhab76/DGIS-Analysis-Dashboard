@@ -1,23 +1,3 @@
-const explicitColorClasses: Record<string, string> = {
-  Hickory: 'bg-success',
-  Maple: 'bg-maple',
-  'Wood Frog': 'bg-success',
-  'White-tailed Deer': 'bg-sunflower',
-  'Red Fox': 'bg-maple',
-  Raccoon: 'bg-lavender',
-  'American Black Bear': 'bg-primary',
-};
-
-const colorPalette = ['bg-success', 'bg-maple', 'bg-sunflower', 'bg-lavender', 'bg-primary'];
-
-const shadowPaletteByColor: Record<string, string> = {
-  'bg-success': 'shadow-[0_0_8px_hsl(var(--success))]',
-  'bg-maple': 'shadow-[0_0_8px_hsl(var(--danger))]',
-  'bg-sunflower': 'shadow-[0_0_8px_hsl(var(--warning))]',
-  'bg-lavender': 'shadow-[0_0_8px_hsl(var(--lavender))]',
-  'bg-primary': 'shadow-[0_0_8px_hsl(var(--primary))]',
-};
-
 function hashLabel(label: string) {
   let hash = 0;
   for (let i = 0; i < label.length; i += 1) {
@@ -26,16 +6,39 @@ function hashLabel(label: string) {
   return hash;
 }
 
-function getPaletteColor(label: string) {
-  const index = hashLabel(label) % colorPalette.length;
-  return colorPalette[index];
+function getScope(label: string, labelScope: string[] = []) {
+  const unique = Array.from(new Set(labelScope.map((name) => name.trim()).filter(Boolean)));
+  if (!unique.includes(label)) {
+    unique.push(label);
+  }
+
+  return unique.sort((a, b) => a.localeCompare(b));
 }
 
-export function getLabelColorClass(label: string) {
-  return explicitColorClasses[label] ?? getPaletteColor(label);
+function getLabelHue(label: string, labelScope: string[] = []) {
+  const scope = getScope(label, labelScope);
+  const index = scope.findIndex((name) => name === label);
+  const total = Math.max(scope.length, 1);
+
+  const scopeSeed = hashLabel(scope.join('|')) % 360;
+  const hueStep = 360 / total;
+
+  return (scopeSeed + index * hueStep) % 360;
 }
 
-export function getLabelShadowClass(label: string) {
-  const colorClass = getLabelColorClass(label);
-  return shadowPaletteByColor[colorClass] ?? '';
+export function getLabelColorValue(label: string, labelScope: string[] = []) {
+  const hue = getLabelHue(label, labelScope);
+  return `hsl(${hue.toFixed(1)} 70% 52%)`;
+}
+
+export function getLabelStyle(label: string, labelScope: string[] = []) {
+  return { backgroundColor: getLabelColorValue(label, labelScope) };
+}
+
+export function getLabelMarkerStyle(label: string, labelScope: string[] = []) {
+  const color = getLabelColorValue(label, labelScope);
+  return {
+    backgroundColor: color,
+    boxShadow: `0 0 8px ${color}`,
+  };
 }
