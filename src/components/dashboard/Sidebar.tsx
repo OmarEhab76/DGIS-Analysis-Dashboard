@@ -8,11 +8,22 @@ interface SidebarProps {
   selectedBiome: BiomeId;
   labels: DashboardLabel[];
   isLoadingLabels?: boolean;
+  isExportDisabled?: boolean;
+  onExportReport: () => void;
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
 }
 
-const Sidebar = ({ activeTab, selectedBiome, labels, filters, onFiltersChange, isLoadingLabels = false }: SidebarProps) => {
+const Sidebar = ({
+  activeTab,
+  selectedBiome,
+  labels,
+  filters,
+  onFiltersChange,
+  isLoadingLabels = false,
+  isExportDisabled = false,
+  onExportReport,
+}: SidebarProps) => {
   const toggleLabel = useCallback(
     (name: string) => {
       const selected = filters.selectedLabels.includes(name)
@@ -136,7 +147,12 @@ const Sidebar = ({ activeTab, selectedBiome, labels, filters, onFiltersChange, i
         )}
       </div>
 
-      <button className="mt-auto flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+      <button
+        type="button"
+        onClick={onExportReport}
+        disabled={isExportDisabled}
+        className="mt-auto flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+      >
         <Download className="w-4 h-4" />
         Export Report
       </button>

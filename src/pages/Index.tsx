@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/dashboard/Navbar';
 import Sidebar from '@/components/dashboard/Sidebar';
 import MapView from '@/components/dashboard/MapView';
+import { toast } from '@/components/ui/sonner';
 import { BiomeId, DashboardTab, Filters } from '@/types/dashboard';
 import { getDetections, getLabels, getStats } from '@/lib/dashboardApi';
+import { buildDetectionsCsv, buildExportFilename, downloadCsvFile } from '@/lib/csvExport';
 import { BIOME_NO_DATA_STATS, BIOME_OPTIONS, getBiomeLabels } from '@/data/mockData';
 
 const Index = () => {
@@ -78,6 +80,21 @@ const Index = () => {
 
   const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
 
+  const isExportDisabled = labelsQuery.isLoading || detectionsQuery.isLoading;
+
+  const handleExportReport = useCallback(() => {
+    const detections = detectionsQuery.data ?? [];
+    if (detections.length === 0) {
+      toast.error('No points found for the current filters.');
+      return;
+    }
+
+    const csvContent = buildDetectionsCsv(detections);
+    const filename = buildExportFilename(activeTab, selectedBiome);
+    downloadCsvFile(csvContent, filename);
+    toast.success(`Exported ${detections.length} points to CSV.`);
+  }, [activeTab, detectionsQuery.data, selectedBiome]);
+
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <Navbar
@@ -93,6 +110,8 @@ const Index = () => {
           selectedBiome={selectedBiome}
           labels={labelsQuery.data || []}
           isLoadingLabels={labelsQuery.isLoading}
+          onExportReport={handleExportReport}
+          isExportDisabled={isExportDisabled}
           filters={filters}
           onFiltersChange={setFilters}
         />
