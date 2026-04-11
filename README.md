@@ -1,73 +1,134 @@
-# Welcome to your Lovable project
+# DGIS Analysis Dashboard
 
-## Project info
+A local dashboard for viewing and filtering ecological detections across supported biomes.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+The project runs as two local services:
+1. Frontend: React + Vite app on port `8080`
+2. Backend: Express API with SQLite on port `3001`
 
-## How can I edit this code?
+## Tech Stack
 
-There are several ways of editing your application.
+- React + TypeScript
+- Vite
+- Tailwind CSS + shadcn/ui
+- Express
+- SQLite (`better-sqlite3`)
+- Vitest + Testing Library
 
-**Use Lovable**
+## Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Install these first:
 
-Changes made via Lovable will be committed automatically to this repo.
+1. Git
+2. Node.js LTS (recommended: Node.js 20 or newer)
+3. npm (comes with Node.js)
 
-**Use your preferred IDE**
+Optional:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. Bun (if you want Bun commands in addition to npm)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Windows note:
+- If native module install fails for `better-sqlite3`, install the Visual Studio C++ Build Tools and retry dependency installation.
 
-Follow these steps:
+## Required Data Files
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+The API expects these SQLite files in the project root:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- `DGIS.db`
+- `DGIS_Boreal.db`
 
-# Step 3: Install the necessary dependencies.
-npm i
+These files are currently present in this repository.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+## Run the Project (Recommended: npm)
+
+1. Clone and enter the repo:
+
+```bash
+git clone <YOUR_REPOSITORY_URL>
+cd state-spun-main
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Start frontend + backend together:
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+4. Open:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- Frontend: http://localhost:8080
+- API health check: http://localhost:3001/api/health
 
-**Use GitHub Codespaces**
+## Run with Bun (Alternative)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. Install dependencies:
 
-## What technologies are used for this project?
+```bash
+bun install
+```
 
-This project is built with:
+2. Start both services:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+bun run dev
+```
 
-## How can I deploy this project?
+If `bun run dev` has issues in your environment, use npm for the `dev` script.
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Environment Variables
 
-## Can I connect a custom domain to my Lovable project?
+You can run without any `.env` file. Optional variables:
 
-Yes, you can!
+- `PORT`: API server port (default: `3001`)
+- `DGIS_DB_PATH`: custom path for the temperate database (defaults to `DGIS.db` in project root)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Example (PowerShell):
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```powershell
+$env:PORT=3002
+$env:DGIS_DB_PATH="C:\path\to\DGIS.db"
+npm run dev:api
+```
+
+## Available Scripts
+
+- `npm run dev`: run backend and frontend together
+- `npm run dev:api`: run API only (`server/index.cjs`)
+- `npm run dev:web`: run frontend only (Vite)
+- `npm run build`: production build
+- `npm run build:dev`: development-mode build
+- `npm run preview`: preview production build locally
+- `npm run lint`: run ESLint
+- `npm run test`: run tests once (Vitest)
+- `npm run test:watch`: run tests in watch mode
+
+## Quick Verification Checklist
+
+After startup:
+
+1. `http://localhost:8080` loads the dashboard UI.
+2. `http://localhost:3001/api/health` returns `ok: true` when databases are accessible.
+3. Selecting supported biomes returns data from the API.
+
+## Troubleshooting
+
+- Port already in use:
+	- Change `PORT` for API and update frontend proxy target in `vite.config.ts` if needed.
+- API returns database unavailable errors:
+	- Confirm `DGIS.db` and `DGIS_Boreal.db` exist in project root.
+	- If using a custom temperate DB path, verify `DGIS_DB_PATH` points to a real file.
+- Frontend loads but no data:
+	- Confirm API is running and `/api/health` succeeds.
+
+## Project Structure
+
+- `src/`: frontend app
+- `server/index.cjs`: backend API
+- `public/maps/`: map assets
+- `src/lib/`: shared helpers and API client code
