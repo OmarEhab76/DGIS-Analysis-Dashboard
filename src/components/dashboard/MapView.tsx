@@ -53,6 +53,11 @@ const MapView = ({
   const hasNoDatabaseObservations =
     hasLiveData && !isLoading && !isLoadingStats && Number(stats?.totalDetections ?? 0) === 0;
 
+  const totalAnimals = useMemo(
+    () => labels.filter((label) => label.group === 'fauna').reduce((sum, label) => sum + label.count, 0),
+    [labels]
+  );
+
   return (
     <div className="relative flex-1 rounded-xl overflow-hidden bg-[hsl(140,25%,15%)] border border-border">
       {/* Map background pattern */}
@@ -76,7 +81,13 @@ const MapView = ({
 
       {/* Stats cards overlaid on the map */}
       <div className="absolute top-4 left-4 right-4 z-20">
-        <StatsCards stats={stats} isLoading={isLoadingStats} hasLiveData={hasLiveData} />
+        <StatsCards
+          activeTab={activeTab}
+          stats={stats}
+          totalAnimals={totalAnimals}
+          isLoading={isLoadingStats}
+          hasLiveData={hasLiveData}
+        />
       </div>
 
       {/* Markers */}

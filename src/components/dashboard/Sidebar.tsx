@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { Download } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { getLabelStyle } from '@/lib/labelColors';
 import { BiomeId, DashboardLabel, DashboardTab, Filters, LabelGroup } from '@/types/dashboard';
 
@@ -93,6 +92,11 @@ const Sidebar = ({
 
   const renderGroupHeader = (group: LabelGroup, items: DashboardLabel[]) => {
     const title = groupDisplayName[group];
+    const checkedState = getGroupCheckedState(items);
+    const isChecked = checkedState === true;
+    const isIndeterminate = checkedState === 'indeterminate';
+    const ariaChecked: boolean | 'mixed' = isIndeterminate ? 'mixed' : isChecked;
+    const dataState = isChecked ? 'checked' : isIndeterminate ? 'indeterminate' : 'unchecked';
 
     return (
       <div className="flex items-center justify-between mb-1">
@@ -103,11 +107,24 @@ const Sidebar = ({
         >
           {title}
         </button>
-        <Checkbox
+        <button
+          type="button"
+          role="checkbox"
           aria-label={`Toggle ${title} labels`}
-          checked={getGroupCheckedState(items)}
-          onCheckedChange={() => toggleGroupLabels(items)}
-        />
+          aria-checked={ariaChecked}
+          data-state={dataState}
+          onClick={() => toggleGroupLabels(items)}
+          className={`relative w-4 h-4 rounded border border-border flex items-center justify-center transition-colors ${
+            isChecked || isIndeterminate ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+          }`}
+        >
+          {isChecked && (
+            <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+          {isIndeterminate && <span className="w-2 h-0.5 rounded-sm bg-primary-foreground" />}
+        </button>
       </div>
     );
   };
