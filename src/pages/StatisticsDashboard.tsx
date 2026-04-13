@@ -1,21 +1,14 @@
-import { Download, Trees, Bug } from 'lucide-react';
-import { useState } from 'react';
+import { Trees, Bug } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/dashboard/Navbar';
-import { BIOME_OPTIONS } from '@/data/mockData';
-import { BiomeId, DashboardTab } from '@/types/dashboard';
-
-const treeFilters = [
-  { name: 'Maple', count: '282', checked: true },
-  { name: 'Oak', count: '124', checked: false },
-  { name: 'Pine', count: '67', checked: false },
-];
-
-const plantFilters = [
-  { name: 'Lavender', count: '842', checked: true },
-  { name: 'Sunflower', count: '68', checked: true },
-  { name: 'Loropetalum chinense', count: '1.2k', checked: false },
-];
+import Sidebar from '@/components/dashboard/Sidebar';
+import { toast } from '@/components/ui/sonner';
+import { BIOME_OPTIONS, getBiomeLabels } from '@/data/mockData';
+import { buildDetectionsCsv, buildExportFilename, downloadCsvFile } from '@/lib/csvExport';
+import { getDetections, getLabels } from '@/lib/dashboardApi';
+import { BiomeId, DashboardTab, Filters } from '@/types/dashboard';
 
 const speciesBars = [
   { name: 'Lavender', height: 57, color: 'bg-violet-400/80' },
@@ -42,6 +35,82 @@ const StatisticsDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DashboardTab>('flora');
   const [selectedBiome, setSelectedBiome] = useState<BiomeId>('temperate-forest');
+  const [filters, setFilters] = useState<Filters>({
+    dateFrom: '',
+    dateTo: '',
+    confidenceMin: 81,
+    selectedLabels: [],
+  });
+
+  const activeBiome = useMemo(
+    () => BIOME_OPTIONS.find((biome) => biome.id === selectedBiome) ?? BIOME_OPTIONS[0],
+    [selectedBiome]
+  );
+  const hasLiveDatabaseData = activeBiome.hasDatabaseData;
+  const expectedDbFile = selectedBiome === 'boreal-forest' ? 'DGIS_Boreal.db' : 'DGIS.db';
+
+  const labelsQuery = useQuery({
+    queryKey: ['dashboard-labels', selectedBiome, activeTab],
+    queryFn: () =>
+      hasLiveDatabaseData ? getLabels(activeTab, selectedBiome) : Promise.resolve(getBiomeLabels(selectedBiome, activeTab)),
+  });
+
+  useEffect(() => {
+    setFilters({
+      dateFrom: '',
+      dateTo: '',
+      confidenceMin: 81,
+      selectedLabels: [],
+    });
+  }, [selectedBiome]);
+
+  useEffect(() => {
+    if (!labelsQuery.data) {
+      return;
+    }
+
+    const allowed = new Set(labelsQuery.data.map((label) => label.name));
+    setFilters((previous) => {
+      const kept = previous.selectedLabels.filter((label) => allowed.has(label));
+      if (kept.length > 0) {
+        return { ...previous, selectedLabels: kept };
+      }
+      return { ...previous, selectedLabels: labelsQuery.data.map((label) => label.name) };
+    });
+  }, [labelsQuery.data]);
+
+  const detectionsQueryParams = useMemo(
+    () => ({
+      category: activeTab,
+      labels: filters.selectedLabels,
+      confidenceMin: filters.confidenceMin,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      biome: selectedBiome,
+    }),
+    [activeTab, filters.confidenceMin, filters.dateFrom, filters.dateTo, filters.selectedLabels, selectedBiome]
+  );
+
+  const detectionsQuery = useQuery({
+    queryKey: ['dashboard-detections', detectionsQueryParams],
+    queryFn: () => (hasLiveDatabaseData ? getDetections(detectionsQueryParams) : Promise.resolve([])),
+  });
+
+  const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError);
+  const isExportDisabled = labelsQuery.isLoading || detectionsQuery.isLoading;
+
+  const handleExportReport = useCallback(() => {
+    const detections = detectionsQuery.data ?? [];
+    if (detections.length === 0) {
+      toast.error('No points found for the current filters.');
+      return;
+    }
+
+    const csvContent = buildDetectionsCsv(detections);
+    const filename = buildExportFilename(activeTab, selectedBiome);
+    downloadCsvFile(csvContent, filename);
+    toast.success(`Exported ${detections.length} points to CSV.`);
+  }, [activeTab, detectionsQuery.data, selectedBiome]);
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
@@ -57,93 +126,23 @@ const StatisticsDashboard = () => {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-56 flex-shrink-0 border-r border-border bg-gradient-to-b from-[#1a4534] via-[#173b2d] to-[#132f24] p-3 text-foreground overflow-y-auto">
-          <div className="mb-5">
-            <h2 className="text-xl font-semibold leading-none">Filters</h2>
-            <p className="text-[11px] text-muted-foreground mt-1">Refine your analysis parameters</p>
-          </div>
-
-          <div className="space-y-5">
-            <section>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Date Range</span>
-                <span className="text-[10px] font-bold text-primary">LAST 7 DAYS</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-md border border-border bg-background/40 p-2">
-                  <p className="text-[10px] text-muted-foreground">FROM</p>
-                  <p className="text-sm font-semibold">Oct 12</p>
-                </div>
-                <div className="rounded-md border border-border bg-background/40 p-2">
-                  <p className="text-[10px] text-muted-foreground">TO</p>
-                  <p className="text-sm font-semibold">Oct 19</p>
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Confidence Score</span>
-                <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-primary">&gt; 85%</span>
-              </div>
-              <input type="range" min={0} max={100} value={85} readOnly className="w-full accent-primary" />
-            </section>
-
-            <section>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-lg font-medium">Trees</p>
-                <span className="h-4 w-4 rounded border border-border bg-background/30" />
-              </div>
-              <div className="space-y-2">
-                {treeFilters.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`h-3.5 w-3.5 rounded border border-primary/40 ${
-                          item.checked ? 'bg-primary' : 'bg-background/40'
-                        }`}
-                      />
-                      <span className="text-foreground/90">{item.name}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{item.count}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-lg font-medium">Plants</p>
-                <span className="h-4 w-4 rounded border border-border bg-background/30" />
-              </div>
-              <div className="space-y-2">
-                {plantFilters.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`h-3.5 w-3.5 rounded border border-primary/40 ${
-                          item.checked ? 'bg-primary' : 'bg-background/40'
-                        }`}
-                      />
-                      <span className="text-foreground/90">{item.name}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{item.count}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          <button
-            type="button"
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-          >
-            <Download className="h-4 w-4" />
-            Export Report
-          </button>
-        </aside>
+        <Sidebar
+          activeTab={activeTab}
+          selectedBiome={selectedBiome}
+          labels={labelsQuery.data || []}
+          isLoadingLabels={labelsQuery.isLoading}
+          onExportReport={handleExportReport}
+          isExportDisabled={isExportDisabled}
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
 
         <main className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_20%_10%,rgba(35,90,64,0.18),transparent_30%),radial-gradient(circle_at_90%_90%,rgba(37,87,62,0.14),transparent_32%)] p-3 sm:p-4">
+          {hasApiError && (
+            <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              Could not load dashboard data for {activeBiome.label}. Ensure the API server is running and {expectedDbFile} exists.
+            </div>
+          )}
           <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-4 lg:grid-cols-[1.05fr_1.3fr]">
             <div className="space-y-4 min-w-0">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
