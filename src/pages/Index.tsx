@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/dashboard/Navbar';
 import Sidebar from '@/components/dashboard/Sidebar';
 import MapView from '@/components/dashboard/MapView';
@@ -10,6 +11,7 @@ import { buildDetectionsCsv, buildExportFilename, downloadCsvFile } from '@/lib/
 import { BIOME_NO_DATA_STATS, BIOME_OPTIONS, getBiomeLabels } from '@/data/mockData';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DashboardTab>('flora');
   const [selectedBiome, setSelectedBiome] = useState<BiomeId>('temperate-forest');
   const [filters, setFilters] = useState<Filters>({
@@ -95,6 +97,10 @@ const Index = () => {
     toast.success(`Exported ${detections.length} points to CSV.`);
   }, [activeTab, detectionsQuery.data, selectedBiome]);
 
+  const handleOpenStatisticsDashboard = useCallback(() => {
+    navigate('/statistics-dashboard');
+  }, [navigate]);
+
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <Navbar
@@ -103,6 +109,7 @@ const Index = () => {
         selectedBiome={selectedBiome}
         biomeOptions={BIOME_OPTIONS}
         onBiomeChange={setSelectedBiome}
+        onActionClick={handleOpenStatisticsDashboard}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar

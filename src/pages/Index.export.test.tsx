@@ -27,6 +27,14 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: vi.fn(),
 }));
 
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  };
+});
+
 vi.mock('@/components/dashboard/Navbar', () => ({
   default: () => <div>Navbar</div>,
 }));
@@ -55,19 +63,21 @@ describe('Index export behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    vi.mocked(useQuery).mockImplementation((options: { queryKey: unknown[] }) => {
-      const scope = String(options.queryKey[0]);
+    vi.mocked(useQuery).mockImplementation(
+      ((options: { queryKey: unknown[] }) => {
+        const scope = String(options.queryKey[0]);
 
-      if (scope === 'dashboard-labels') {
-        return LABELS_QUERY_RESULT;
-      }
+        if (scope === 'dashboard-labels') {
+          return LABELS_QUERY_RESULT;
+        }
 
-      if (scope === 'dashboard-detections') {
-        return DETECTIONS_QUERY_RESULT;
-      }
+        if (scope === 'dashboard-detections') {
+          return DETECTIONS_QUERY_RESULT;
+        }
 
-      return STATS_QUERY_RESULT;
-    });
+        return STATS_QUERY_RESULT;
+      }) as never
+    );
   });
 
   it('does not download and shows an error toast when no detections match filters', () => {

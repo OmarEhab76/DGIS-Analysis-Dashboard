@@ -9,9 +9,21 @@ interface NavbarProps {
   selectedBiome: BiomeId;
   biomeOptions: BiomeOption[];
   onBiomeChange: (biome: BiomeId) => void;
+  actionLabel?: string;
+  actionIconSrc?: string;
+  onActionClick?: () => void;
 }
 
-const Navbar = ({ activeTab, onTabChange, selectedBiome, biomeOptions, onBiomeChange }: NavbarProps) => {
+const Navbar = ({
+  activeTab,
+  onTabChange,
+  selectedBiome,
+  biomeOptions,
+  onBiomeChange,
+  actionLabel = 'Statistics Dashboard',
+  actionIconSrc = '/icons/Statistics%20Dashboard.svg',
+  onActionClick,
+}: NavbarProps) => {
   const activeBiome = biomeOptions.find((biome) => biome.id === selectedBiome) ?? biomeOptions[0];
 
   return (
@@ -70,9 +82,13 @@ const Navbar = ({ activeTab, onTabChange, selectedBiome, biomeOptions, onBiomeCh
         </div>
       </div>
 
-      <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-        <img src="/icons/Statistics%20Dashboard.svg" alt="Statistics Dashboard Icon" className="w-5 h-5" />
-        Statistics Dashboard
+      <button
+        type="button"
+        onClick={onActionClick}
+        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+      >
+        <img src={actionIconSrc} alt={`${actionLabel} Icon`} className="w-5 h-5" />
+        {actionLabel}
       </button>
     </header>
   );
