@@ -5,9 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/dashboard/Navbar';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { toast } from '@/components/ui/sonner';
-import { BIOME_OPTIONS, getBiomeLabels } from '@/data/mockData';
+import { BIOME_NO_DATA_STATS, BIOME_OPTIONS, getBiomeLabels } from '@/data/mockData';
 import { buildDetectionsCsv, buildExportFilename, downloadCsvFile } from '@/lib/csvExport';
-import { getDetections, getLabels } from '@/lib/dashboardApi';
+import { getDetections, getLabels, getStats } from '@/lib/dashboardApi';
 import { BiomeId, DashboardTab, Filters } from '@/types/dashboard';
 
 const speciesBars = [
@@ -96,7 +96,17 @@ const StatisticsDashboard = () => {
     queryFn: () => (hasLiveDatabaseData ? getDetections(detectionsQueryParams) : Promise.resolve([])),
   });
 
-  const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError);
+  const statsQuery = useQuery({
+    queryKey: ['dashboard-stats', selectedBiome],
+    queryFn: () => (hasLiveDatabaseData ? getStats(selectedBiome) : Promise.resolve(BIOME_NO_DATA_STATS)),
+  });
+
+  const treeDensity = useMemo(() => {
+    if (!statsQuery.data || !statsQuery.data.areaScanned) return 0;
+    return Math.round(statsQuery.data.totalTrees / statsQuery.data.areaScanned);
+  }, [statsQuery.data]);
+
+  const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
   const isExportDisabled = labelsQuery.isLoading || detectionsQuery.isLoading;
 
   const handleExportReport = useCallback(() => {
@@ -150,7 +160,9 @@ const StatisticsDashboard = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Tree Density</p>
-                      <p className="mt-2 text-4xl font-bold leading-none text-foreground">1,482</p>
+                      <p className="mt-2 text-4xl font-bold leading-none text-foreground">
+                        {statsQuery.isLoading ? '--' : treeDensity.toLocaleString()}
+                      </p>
                     </div>
                     <div className="rounded-full bg-emerald-500/10 p-2 text-primary">
                       <Trees className="h-5 w-5" />
