@@ -32,30 +32,43 @@ const confidenceBars = [
 ];
 
 const taxonomyMap: Record<string, string> = {
-  // Boreal Forest
+  // Fauna: Boreal Forest
   'Beaver': 'Mammals', 'Lynx': 'Mammals', 'Marten': 'Mammals', 'Squirrel': 'Mammals',
   'Warbler': 'Birds', 'Woodpecker': 'Birds',
-  // Coastal Desert
+  // Fauna: Coastal Desert
   'Desert Bighorn Sheep': 'Mammals', 'Desert Gazelle': 'Mammals',
   'Pelican': 'Birds', 'Seabird': 'Birds',
   'Desert Tortoise': 'Reptiles', 'Rattlesnake': 'Reptiles',
-  // Mountain
+  // Fauna: Mountain
   'Alpine Marmot': 'Mammals', 'Elk': 'Mammals', 'Grizzly Bear': 'Mammals', 'Mountain Lion': 'Mammals',
   'Golden Eagle': 'Birds',
-  // Plains
+  // Fauna: Plains
   'Bison': 'Mammals', 'Black-footed Ferret': 'Mammals', 'Hyena': 'Mammals', 'Lion': 'Mammals', 'Plains Elephant': 'Mammals', 'Zebra': 'Mammals',
   'Burrowing Owl': 'Birds', 'Pipit': 'Birds', 'Quail': 'Birds',
   'Ornate Box Turtle': 'Reptiles',
-  // Subtropical Desert
+  // Fauna: Subtropical Desert
   'Jerboa': 'Mammals', 'Fennec Fox': 'Mammals', 'Dromedary Camel': 'Mammals',
   'Gecko': 'Reptiles', 'Horned Lizard': 'Reptiles',
-  // New Additions
+  // Fauna: New Additions
   'Wood Frog': 'Amphibians',
   'White-tailed Deer': 'Mammals',
   'Red Fox': 'Mammals',
   'Raccoon': 'Mammals',
   'American Black Bear': 'Mammals',
   'Desert Scorpion': 'Arachnids',
+
+  // Flora: Trees - Gymnosperms
+  'Conifer': 'Gymnosperms (Conifers)',
+  // Flora: Trees - Angiosperms (Broadleaf)
+  'Birch Tree': 'Broadleaf Trees', 'Hickory': 'Broadleaf Trees', 'Maple': 'Broadleaf Trees',
+  // Flora: Trees - Angiosperms (Desert/Tropical)
+  'Desert Willow': 'Desert / Tropical Trees', 'Date Palm': 'Desert / Tropical Trees',
+  // Flora: Shrubs & Herbs (Ground Plants)
+  'Buffalograss': 'Herbs / Ground Plants', 'Edelweiss': 'Herbs / Ground Plants', 'Heather': 'Herbs / Ground Plants', 'Rhododendron': 'Herbs / Ground Plants',
+  // Flora: Succulents & Desert Plants
+  'Agave': 'Succulents & Desert Plants', 'Cactus': 'Succulents & Desert Plants', 'Aloe Vera Plant': 'Succulents & Desert Plants',
+  // Flora: Flowering/Medicinal Plants
+  'Salvia Plant': 'Flowering/Medicinal Plants',
 };
 
 const StatisticsDashboard = () => {
@@ -174,6 +187,37 @@ const StatisticsDashboard = () => {
     return { mammals, birds, reptiles, amphibians, arachnids, total: mammals + birds + reptiles + amphibians + arachnids };
   }, [activeTab, detectionsQuery.data]);
 
+  const floraTaxonomyStats = useMemo(() => {
+    let conifers = 0;
+    let broadleaf = 0;
+    let desertTropical = 0;
+    let herbsGround = 0;
+    let succulentsDesert = 0;
+    let floweringMedicinal = 0;
+
+    if (activeTab === 'flora' && detectionsQuery.data && detectionsQuery.data.length > 0) {
+      detectionsQuery.data.forEach((d) => {
+        const tax = taxonomyMap[d.name];
+        if (tax === 'Gymnosperms (Conifers)') conifers++;
+        else if (tax === 'Broadleaf Trees') broadleaf++;
+        else if (tax === 'Desert / Tropical Trees') desertTropical++;
+        else if (tax === 'Herbs / Ground Plants') herbsGround++;
+        else if (tax === 'Succulents & Desert Plants') succulentsDesert++;
+        else if (tax === 'Flowering/Medicinal Plants') floweringMedicinal++;
+      });
+    }
+
+    return {
+      conifers,
+      broadleaf,
+      desertTropical,
+      herbsGround,
+      succulentsDesert,
+      floweringMedicinal,
+      total: conifers + broadleaf + desertTropical + herbsGround + succulentsDesert + floweringMedicinal
+    };
+  }, [activeTab, detectionsQuery.data]);
+
   const mammalsPct = taxonomyStats.total > 0 ? Math.round((taxonomyStats.mammals / taxonomyStats.total) * 100) : 0;
   const birdsPct = taxonomyStats.total > 0 ? Math.round((taxonomyStats.birds / taxonomyStats.total) * 100) : 0;
   const reptilesPct = taxonomyStats.total > 0 ? Math.round((taxonomyStats.reptiles / taxonomyStats.total) * 100) : 0;
@@ -192,6 +236,30 @@ const StatisticsDashboard = () => {
   const grad4 = grad3 + amphibiansAngle;
   const taxonomyGradient = taxonomyStats.total > 0
     ? `conic-gradient(rgb(74 222 128) 0deg ${grad1}deg, rgb(253 230 138) ${grad1}deg ${grad2}deg, rgb(251 113 133) ${grad2}deg ${grad3}deg, rgb(96 165 250) ${grad3}deg ${grad4}deg, rgb(192 132 252) ${grad4}deg 360deg)`
+    : 'none';
+
+  const conifersPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.conifers / floraTaxonomyStats.total) * 100) : 0;
+  const broadleafPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.broadleaf / floraTaxonomyStats.total) * 100) : 0;
+  const desertTropicalPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.desertTropical / floraTaxonomyStats.total) * 100) : 0;
+  const herbsGroundPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.herbsGround / floraTaxonomyStats.total) * 100) : 0;
+  const succulentsDesertPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.succulentsDesert / floraTaxonomyStats.total) * 100) : 0;
+  const floweringMedicinalPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.floweringMedicinal / floraTaxonomyStats.total) * 100) : 0;
+
+  const conifersAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.conifers / floraTaxonomyStats.total) * 360 : 0;
+  const broadleafAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.broadleaf / floraTaxonomyStats.total) * 360 : 0;
+  const desertTropicalAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.desertTropical / floraTaxonomyStats.total) * 360 : 0;
+  const herbsGroundAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.herbsGround / floraTaxonomyStats.total) * 360 : 0;
+  const succulentsDesertAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.succulentsDesert / floraTaxonomyStats.total) * 360 : 0;
+  const floweringMedicinalAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.floweringMedicinal / floraTaxonomyStats.total) * 360 : 0;
+
+  const fGrad1 = conifersAngle;
+  const fGrad2 = fGrad1 + broadleafAngle;
+  const fGrad3 = fGrad2 + desertTropicalAngle;
+  const fGrad4 = fGrad3 + herbsGroundAngle;
+  const fGrad5 = fGrad4 + succulentsDesertAngle;
+
+  const floraTaxonomyGradient = floraTaxonomyStats.total > 0
+    ? `conic-gradient(rgb(6 78 59) 0deg ${fGrad1}deg, rgb(16 185 129) ${fGrad1}deg ${fGrad2}deg, rgb(252 211 77) ${fGrad2}deg ${fGrad3}deg, rgb(244 114 182) ${fGrad3}deg ${fGrad4}deg, rgb(251 146 60) ${fGrad4}deg ${fGrad5}deg, rgb(167 139 250) ${fGrad5}deg 360deg)`
     : 'none';
 
   const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
@@ -274,51 +342,98 @@ const StatisticsDashboard = () => {
               </div>
 
               <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5">
-                <h3 className="text-2xl font-semibold leading-none">Taxonomy Breakdown</h3>
+                <h3 className="text-2xl font-semibold leading-none">{activeTab === 'fauna' ? 'Taxonomy Breakdown' : 'Flora Taxonomy Breakdown'}</h3>
                 <p className="text-sm text-muted-foreground">Major category distribution</p>
                 <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                   <div className="space-y-3 text-sm min-w-[180px]">
-                    {taxonomyStats.mammals > 0 && (
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /> Mammals</span>
-                        <span className="font-semibold text-right w-16">{taxonomyStats.mammals} <span className="text-xs font-normal text-muted-foreground">({mammalsPct}%)</span></span>
-                      </div>
-                    )}
-                    {taxonomyStats.birds > 0 && (
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-amber-200" /> Birds</span>
-                        <span className="font-semibold text-right w-16">{taxonomyStats.birds} <span className="text-xs font-normal text-muted-foreground">({birdsPct}%)</span></span>
-                      </div>
-                    )}
-                    {taxonomyStats.reptiles > 0 && (
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-rose-400" /> Reptiles</span>
-                        <span className="font-semibold text-right w-16">{taxonomyStats.reptiles} <span className="text-xs font-normal text-muted-foreground">({reptilesPct}%)</span></span>
-                      </div>
-                    )}
-                    {taxonomyStats.amphibians > 0 && (
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-blue-400" /> Amphibians</span>
-                        <span className="font-semibold text-right w-16">{taxonomyStats.amphibians} <span className="text-xs font-normal text-muted-foreground">({amphibiansPct}%)</span></span>
-                      </div>
-                    )}
-                    {taxonomyStats.arachnids > 0 && (
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-purple-400" /> Arachnids</span>
-                        <span className="font-semibold text-right w-16">{taxonomyStats.arachnids} <span className="text-xs font-normal text-muted-foreground">({arachnidsPct}%)</span></span>
-                      </div>
+                    {activeTab === 'fauna' ? (
+                      <>
+                        {taxonomyStats.mammals > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /> Mammals</span>
+                            <span className="font-semibold text-right w-16">{taxonomyStats.mammals} <span className="text-xs font-normal text-muted-foreground">({mammalsPct}%)</span></span>
+                          </div>
+                        )}
+                        {taxonomyStats.birds > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-amber-200" /> Birds</span>
+                            <span className="font-semibold text-right w-16">{taxonomyStats.birds} <span className="text-xs font-normal text-muted-foreground">({birdsPct}%)</span></span>
+                          </div>
+                        )}
+                        {taxonomyStats.reptiles > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-rose-400" /> Reptiles</span>
+                            <span className="font-semibold text-right w-16">{taxonomyStats.reptiles} <span className="text-xs font-normal text-muted-foreground">({reptilesPct}%)</span></span>
+                          </div>
+                        )}
+                        {taxonomyStats.amphibians > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-blue-400" /> Amphibians</span>
+                            <span className="font-semibold text-right w-16">{taxonomyStats.amphibians} <span className="text-xs font-normal text-muted-foreground">({amphibiansPct}%)</span></span>
+                          </div>
+                        )}
+                        {taxonomyStats.arachnids > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-purple-400" /> Arachnids</span>
+                            <span className="font-semibold text-right w-16">{taxonomyStats.arachnids} <span className="text-xs font-normal text-muted-foreground">({arachnidsPct}%)</span></span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {floraTaxonomyStats.conifers > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-900" /> Gymnosperms</span>
+                            <span className="font-semibold text-right w-16">{floraTaxonomyStats.conifers} <span className="text-xs font-normal text-muted-foreground">({conifersPct}%)</span></span>
+                          </div>
+                        )}
+                        {floraTaxonomyStats.broadleaf > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Broadleaf</span>
+                            <span className="font-semibold text-right w-16">{floraTaxonomyStats.broadleaf} <span className="text-xs font-normal text-muted-foreground">({broadleafPct}%)</span></span>
+                          </div>
+                        )}
+                        {floraTaxonomyStats.desertTropical > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-amber-300" /> Desert / Tropical</span>
+                            <span className="font-semibold text-right w-16">{floraTaxonomyStats.desertTropical} <span className="text-xs font-normal text-muted-foreground">({desertTropicalPct}%)</span></span>
+                          </div>
+                        )}
+                        {floraTaxonomyStats.herbsGround > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-pink-400" /> Herbs / Ground</span>
+                            <span className="font-semibold text-right w-16">{floraTaxonomyStats.herbsGround} <span className="text-xs font-normal text-muted-foreground">({herbsGroundPct}%)</span></span>
+                          </div>
+                        )}
+                        {floraTaxonomyStats.succulentsDesert > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-orange-400" /> Succulents</span>
+                            <span className="font-semibold text-right w-16">{floraTaxonomyStats.succulentsDesert} <span className="text-xs font-normal text-muted-foreground">({succulentsDesertPct}%)</span></span>
+                          </div>
+                        )}
+                        {floraTaxonomyStats.floweringMedicinal > 0 && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-violet-400" /> Flowering/Medicinal</span>
+                            <span className="font-semibold text-right w-16">{floraTaxonomyStats.floweringMedicinal} <span className="text-xs font-normal text-muted-foreground">({floweringMedicinalPct}%)</span></span>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
                   <div
-                    className={`relative h-44 w-44 rounded-full ${taxonomyStats.total === 0 ? 'bg-emerald-900/20' : ''}`}
+                    className={`relative h-44 w-44 rounded-full ${
+                      (activeTab === 'fauna' && taxonomyStats.total === 0) || (activeTab === 'flora' && floraTaxonomyStats.total === 0) 
+                        ? 'bg-emerald-900/20' 
+                        : ''
+                    }`}
                     style={{
-                      background: taxonomyGradient,
+                      background: activeTab === 'fauna' ? taxonomyGradient : floraTaxonomyGradient,
                     }}
                   >
                     <div className="absolute inset-[17%] grid place-items-center rounded-full border border-emerald-900/40 bg-[#052015]">
                       <div className="text-center">
-                        <p className="text-4xl font-bold leading-none">{taxonomyStats.total}</p>
+                        <p className="text-4xl font-bold leading-none">{activeTab === 'fauna' ? taxonomyStats.total : floraTaxonomyStats.total}</p>
                         <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">Classified</p>
                       </div>
                     </div>
