@@ -31,6 +31,33 @@ const confidenceBars = [
   { label: '100%', value: 48 },
 ];
 
+const taxonomyMap: Record<string, string> = {
+  // Boreal Forest
+  'Beaver': 'Mammals', 'Lynx': 'Mammals', 'Marten': 'Mammals', 'Squirrel': 'Mammals',
+  'Warbler': 'Birds', 'Woodpecker': 'Birds',
+  // Coastal Desert
+  'Desert Bighorn Sheep': 'Mammals', 'Desert Gazelle': 'Mammals',
+  'Pelican': 'Birds', 'Seabird': 'Birds',
+  'Desert Tortoise': 'Reptiles', 'Rattlesnake': 'Reptiles',
+  // Mountain
+  'Alpine Marmot': 'Mammals', 'Elk': 'Mammals', 'Grizzly Bear': 'Mammals', 'Mountain Lion': 'Mammals',
+  'Golden Eagle': 'Birds',
+  // Plains
+  'Bison': 'Mammals', 'Black-footed Ferret': 'Mammals', 'Hyena': 'Mammals', 'Lion': 'Mammals', 'Plains Elephant': 'Mammals', 'Zebra': 'Mammals',
+  'Burrowing Owl': 'Birds', 'Pipit': 'Birds', 'Quail': 'Birds',
+  'Ornate Box Turtle': 'Reptiles',
+  // Subtropical Desert
+  'Jerboa': 'Mammals', 'Fennec Fox': 'Mammals', 'Dromedary Camel': 'Mammals',
+  'Gecko': 'Reptiles', 'Horned Lizard': 'Reptiles',
+  // New Additions
+  'Wood Frog': 'Amphibians',
+  'White-tailed Deer': 'Mammals',
+  'Red Fox': 'Mammals',
+  'Raccoon': 'Mammals',
+  'American Black Bear': 'Mammals',
+  'Desert Scorpion': 'Arachnids',
+};
+
 const StatisticsDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DashboardTab>('flora');
@@ -124,6 +151,49 @@ const StatisticsDashboard = () => {
     return shannonIndex.toFixed(2);
   }, [detectionsQuery.data]);
 
+  const taxonomyStats = useMemo(() => {
+    if (activeTab !== 'fauna' || !detectionsQuery.data || detectionsQuery.data.length === 0) {
+      return { mammals: 0, birds: 0, reptiles: 0, amphibians: 0, arachnids: 0, total: 0 };
+    }
+
+    let mammals = 0;
+    let birds = 0;
+    let reptiles = 0;
+    let amphibians = 0;
+    let arachnids = 0;
+
+    detectionsQuery.data.forEach((d) => {
+      const tax = taxonomyMap[d.name];
+      if (tax === 'Mammals') mammals++;
+      else if (tax === 'Birds') birds++;
+      else if (tax === 'Reptiles') reptiles++;
+      else if (tax === 'Amphibians') amphibians++;
+      else if (tax === 'Arachnids') arachnids++;
+    });
+
+    return { mammals, birds, reptiles, amphibians, arachnids, total: mammals + birds + reptiles + amphibians + arachnids };
+  }, [activeTab, detectionsQuery.data]);
+
+  const mammalsPct = taxonomyStats.total > 0 ? Math.round((taxonomyStats.mammals / taxonomyStats.total) * 100) : 0;
+  const birdsPct = taxonomyStats.total > 0 ? Math.round((taxonomyStats.birds / taxonomyStats.total) * 100) : 0;
+  const reptilesPct = taxonomyStats.total > 0 ? Math.round((taxonomyStats.reptiles / taxonomyStats.total) * 100) : 0;
+  const amphibiansPct = taxonomyStats.total > 0 ? Math.round((taxonomyStats.amphibians / taxonomyStats.total) * 100) : 0;
+  const arachnidsPct = taxonomyStats.total > 0 ? Math.round((taxonomyStats.arachnids / taxonomyStats.total) * 100) : 0;
+
+  const mammalsAngle = taxonomyStats.total > 0 ? (taxonomyStats.mammals / taxonomyStats.total) * 360 : 0;
+  const birdsAngle = taxonomyStats.total > 0 ? (taxonomyStats.birds / taxonomyStats.total) * 360 : 0;
+  const reptilesAngle = taxonomyStats.total > 0 ? (taxonomyStats.reptiles / taxonomyStats.total) * 360 : 0;
+  const amphibiansAngle = taxonomyStats.total > 0 ? (taxonomyStats.amphibians / taxonomyStats.total) * 360 : 0;
+  const arachnidsAngle = taxonomyStats.total > 0 ? (taxonomyStats.arachnids / taxonomyStats.total) * 360 : 0;
+
+  const grad1 = mammalsAngle;
+  const grad2 = grad1 + birdsAngle;
+  const grad3 = grad2 + reptilesAngle;
+  const grad4 = grad3 + amphibiansAngle;
+  const taxonomyGradient = taxonomyStats.total > 0
+    ? `conic-gradient(rgb(74 222 128) 0deg ${grad1}deg, rgb(253 230 138) ${grad1}deg ${grad2}deg, rgb(251 113 133) ${grad2}deg ${grad3}deg, rgb(96 165 250) ${grad3}deg ${grad4}deg, rgb(192 132 252) ${grad4}deg 360deg)`
+    : 'none';
+
   const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
   const isExportDisabled = labelsQuery.isLoading || detectionsQuery.isLoading;
 
@@ -208,31 +278,48 @@ const StatisticsDashboard = () => {
                 <p className="text-sm text-muted-foreground">Major category distribution</p>
                 <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                   <div className="space-y-3 text-sm min-w-[180px]">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /> Mammals</span>
-                      <span className="font-semibold">60%</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-amber-200" /> Birds</span>
-                      <span className="font-semibold">25%</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-rose-400" /> Reptiles</span>
-                      <span className="font-semibold">15%</span>
-                    </div>
+                    {taxonomyStats.mammals > 0 && (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /> Mammals</span>
+                        <span className="font-semibold text-right w-16">{taxonomyStats.mammals} <span className="text-xs font-normal text-muted-foreground">({mammalsPct}%)</span></span>
+                      </div>
+                    )}
+                    {taxonomyStats.birds > 0 && (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-amber-200" /> Birds</span>
+                        <span className="font-semibold text-right w-16">{taxonomyStats.birds} <span className="text-xs font-normal text-muted-foreground">({birdsPct}%)</span></span>
+                      </div>
+                    )}
+                    {taxonomyStats.reptiles > 0 && (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-rose-400" /> Reptiles</span>
+                        <span className="font-semibold text-right w-16">{taxonomyStats.reptiles} <span className="text-xs font-normal text-muted-foreground">({reptilesPct}%)</span></span>
+                      </div>
+                    )}
+                    {taxonomyStats.amphibians > 0 && (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-blue-400" /> Amphibians</span>
+                        <span className="font-semibold text-right w-16">{taxonomyStats.amphibians} <span className="text-xs font-normal text-muted-foreground">({amphibiansPct}%)</span></span>
+                      </div>
+                    )}
+                    {taxonomyStats.arachnids > 0 && (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-purple-400" /> Arachnids</span>
+                        <span className="font-semibold text-right w-16">{taxonomyStats.arachnids} <span className="text-xs font-normal text-muted-foreground">({arachnidsPct}%)</span></span>
+                      </div>
+                    )}
                   </div>
 
                   <div
-                    className="relative h-44 w-44 rounded-full"
+                    className={`relative h-44 w-44 rounded-full ${taxonomyStats.total === 0 ? 'bg-emerald-900/20' : ''}`}
                     style={{
-                      background:
-                        'conic-gradient(rgb(74 222 128) 0deg 216deg, rgb(253 230 138) 216deg 306deg, rgb(251 113 133) 306deg 360deg)',
+                      background: taxonomyGradient,
                     }}
                   >
                     <div className="absolute inset-[17%] grid place-items-center rounded-full border border-emerald-900/40 bg-[#052015]">
                       <div className="text-center">
-                        <p className="text-4xl font-bold leading-none">32</p>
-                        <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">Species</p>
+                        <p className="text-4xl font-bold leading-none">{taxonomyStats.total}</p>
+                        <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">Classified</p>
                       </div>
                     </div>
                   </div>
