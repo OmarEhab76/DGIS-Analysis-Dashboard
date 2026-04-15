@@ -106,6 +106,24 @@ const StatisticsDashboard = () => {
     return Math.round(statsQuery.data.totalTrees / statsQuery.data.areaScanned);
   }, [statsQuery.data]);
 
+  const biodiversityIndex = useMemo(() => {
+    if (!detectionsQuery.data || detectionsQuery.data.length === 0) return "0.00";
+    
+    const counts = detectionsQuery.data.reduce((acc, detection) => {
+      acc[detection.name] = (acc[detection.name] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const totalIndividuals = detectionsQuery.data.length;
+    
+    const shannonIndex = Object.values(counts).reduce<number>((index: number, count: any) => {
+      const pi = (count as number) / totalIndividuals;
+      return index - (pi * Math.log(pi));
+    }, 0);
+    
+    return shannonIndex.toFixed(2);
+  }, [detectionsQuery.data]);
+
   const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
   const isExportDisabled = labelsQuery.isLoading || detectionsQuery.isLoading;
 
@@ -174,7 +192,9 @@ const StatisticsDashboard = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Biodiversity Index</p>
-                      <p className="mt-2 text-4xl font-bold leading-none text-foreground">2.4</p>
+                      <p className="mt-2 text-4xl font-bold leading-none text-foreground">
+                        {detectionsQuery.isLoading ? '--' : biodiversityIndex}
+                      </p>
                     </div>
                     <div className="rounded-full bg-amber-300/10 p-2 text-amber-200">
                       <Bug className="h-5 w-5" />
