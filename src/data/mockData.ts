@@ -25,7 +25,7 @@ export const BIOME_LABEL_CATALOG: Record<BiomeId, BiomeLabelCatalog> = {
     },
   },
   'coastal-desert': {
-    fauna: ['Desert Bighorn Sheep', 'Desert Tortoise', 'Desert Gazelle', 'Pelican', 'Rattlesnake', 'Seabird'],
+    fauna: ['Desert Bighorn Sheep', 'Desert Tortoise', 'Desert Gazelle', 'Pelican', 'Rattlesnake', 'Seabird (avg)'],
     flora: {
       trees: ['Desert Willow'],
       plants: ['Agave', 'Cactus'],
@@ -57,7 +57,7 @@ export const BIOME_LABEL_CATALOG: Record<BiomeId, BiomeLabelCatalog> = {
     },
   },
   'subtropical-desert': {
-    fauna: ['Jerboa', 'Desert Scorpions', 'Fennec Fox', 'Dromedary Camel', 'Gecko', 'Horned Lizard'],
+    fauna: ['Jerboa', 'Desert Scorpion', 'Fennec Fox', 'Dromedary Camel', 'Gecko', 'Horned Lizard'],
     flora: {
       trees: ['Date Palm'],
       plants: ['Aloe Vera Plant', 'Salvia Plant'],

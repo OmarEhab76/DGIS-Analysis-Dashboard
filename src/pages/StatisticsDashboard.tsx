@@ -41,7 +41,7 @@ const taxonomyMap: Record<string, string> = {
   'Warbler': 'Birds', 'Woodpecker': 'Birds',
   // Fauna: Coastal Desert
   'Desert Bighorn Sheep': 'Mammals', 'Desert Gazelle': 'Mammals',
-  'Pelican': 'Birds', 'Seabird': 'Birds',
+  'Pelican': 'Birds', 'Seabird': 'Birds', 'Seabird (avg)': 'Birds',
   'Desert Tortoise': 'Reptiles', 'Rattlesnake': 'Reptiles',
   // Fauna: Mountain
   'Alpine Marmot': 'Mammals', 'Elk': 'Mammals', 'Grizzly Bear': 'Mammals', 'Mountain Lion': 'Mammals',
@@ -59,7 +59,7 @@ const taxonomyMap: Record<string, string> = {
   'Red Fox': 'Mammals',
   'Raccoon': 'Mammals',
   'American Black Bear': 'Mammals',
-  'Desert Scorpion': 'Arachnids',
+  'Desert Scorpion': 'Arachnids', 'Desert Scorpions': 'Arachnids',
 
   // Flora: Trees - Gymnosperms
   'Conifer': 'Gymnosperms (Conifers)',
@@ -75,16 +75,28 @@ const taxonomyMap: Record<string, string> = {
   'Salvia Plant': 'Flowering/Medicinal Plants',
 };
 
-interface MorphologySpeciesDimension {
+interface FloraMorphologySpeciesDimension {
   averageHeight: number;
   averageWidth: number;
 }
 
+interface FaunaMorphologySpeciesDimension {
+  averageWeightKg: number;
+  averageSizeCm: number;
+}
+
+type MorphologySpeciesDimension = FloraMorphologySpeciesDimension | FaunaMorphologySpeciesDimension;
+
 interface MorphologyBubbleDatum {
   id: string;
   name: string;
-  averageHeight: number;
-  averageWidth: number;
+  metricType: DashboardTab;
+  xValue: number;
+  yValue: number;
+  averageHeight?: number;
+  averageWidth?: number;
+  averageWeightKg?: number;
+  averageSizeCm?: number;
   count: number;
   bubbleSize: number;
   fill: string;
@@ -98,7 +110,7 @@ interface BaseTooltipProps<T> {
   }>;
 }
 
-const MORPHOLOGY_SPECIES_DIMENSIONS: Record<string, MorphologySpeciesDimension> = {
+const MORPHOLOGY_FLORA_SPECIES_DIMENSIONS: Record<string, FloraMorphologySpeciesDimension> = {
   'Birch Tree': {
     averageHeight: 22.5,
     averageWidth: 7.5,
@@ -124,6 +136,73 @@ const MORPHOLOGY_SPECIES_DIMENSIONS: Record<string, MorphologySpeciesDimension> 
     averageWidth: 4.5,
   },
 };
+
+const MORPHOLOGY_FAUNA_SPECIES_DIMENSIONS: Record<string, FaunaMorphologySpeciesDimension> = {
+  'Beaver': { averageWeightKg: 23, averageSizeCm: 82.5 },
+  'Lynx': { averageWeightKg: 19, averageSizeCm: 95 },
+  'Marten': { averageWeightKg: 1.25, averageSizeCm: 55 },
+  'Squirrel': { averageWeightKg: 0.5, averageSizeCm: 35 },
+  'Warbler': { averageWeightKg: 0.0165, averageSizeCm: 12.5 },
+  'Woodpecker': { averageWeightKg: 0.21, averageSizeCm: 32.5 },
+  'Desert Bighorn Sheep': { averageWeightKg: 92.5, averageSizeCm: 87.5 },
+  'Desert Tortoise': { averageWeightKg: 5.5, averageSizeCm: 30 },
+  'Desert Gazelle': { averageWeightKg: 20, averageSizeCm: 60 },
+  'Pelican': { averageWeightKg: 8.5, averageSizeCm: 140 },
+  'Rattlesnake': { averageWeightKg: 1.5, averageSizeCm: 105 },
+  'Seabird (avg)': { averageWeightKg: 0.85, averageSizeCm: 50 },
+  'Alpine Marmot': { averageWeightKg: 5.5, averageSizeCm: 60 },
+  'Elk': { averageWeightKg: 325, averageSizeCm: 135 },
+  'Golden Eagle': { averageWeightKg: 5, averageSizeCm: 85 },
+  'Grizzly Bear': { averageWeightKg: 270, averageSizeCm: 125 },
+  'Mountain Lion': { averageWeightKg: 75, averageSizeCm: 125 },
+  'Bison': { averageWeightKg: 650, averageSizeCm: 175 },
+  'Black-footed Ferret': { averageWeightKg: 1.1, averageSizeCm: 50 },
+  'Burrowing Owl': { averageWeightKg: 0.2, averageSizeCm: 25 },
+  'Hyena': { averageWeightKg: 60, averageSizeCm: 80 },
+  'Lion': { averageWeightKg: 185, averageSizeCm: 110 },
+  'Ornate Box Turtle': { averageWeightKg: 0.7, averageSizeCm: 12.5 },
+  'Pipit': { averageWeightKg: 0.03, averageSizeCm: 16.5 },
+  'Plains Elephant': { averageWeightKg: 4500, averageSizeCm: 325 },
+  'Quail': { averageWeightKg: 0.175, averageSizeCm: 20 },
+  'Zebra': { averageWeightKg: 325, averageSizeCm: 135 },
+  'Jerboa': { averageWeightKg: 0.065, averageSizeCm: 12.5 },
+  'Desert Scorpion': { averageWeightKg: 0.016, averageSizeCm: 7.5 },
+  'Fennec Fox': { averageWeightKg: 1.15, averageSizeCm: 30 },
+  'Dromedary Camel': { averageWeightKg: 500, averageSizeCm: 205 },
+  'Gecko': { averageWeightKg: 0.06, averageSizeCm: 15 },
+  'Horned Lizard': { averageWeightKg: 0.065, averageSizeCm: 10.5 },
+  'Wood Frog': { averageWeightKg: 0.0135, averageSizeCm: 6.5 },
+  'White-tailed Deer': { averageWeightKg: 90, averageSizeCm: 90 },
+  'Red Fox': { averageWeightKg: 8.5, averageSizeCm: 42.5 },
+  'Raccoon': { averageWeightKg: 7, averageSizeCm: 55 },
+  'American Black Bear': { averageWeightKg: 180, averageSizeCm: 110 },
+};
+
+function isFaunaMorphologyDimension(
+  dimensions: MorphologySpeciesDimension
+): dimensions is FaunaMorphologySpeciesDimension {
+  return 'averageWeightKg' in dimensions;
+}
+
+function buildNumericDomain(values: number[], fallback: [number, number]): [number, number] {
+  if (values.length === 0) {
+    return fallback;
+  }
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) {
+    return fallback;
+  }
+
+  if (minValue === maxValue) {
+    const padding = Math.max(Math.abs(minValue) * 0.15, 1);
+    return [Math.max(0, minValue - padding), maxValue + padding];
+  }
+
+  const padding = (maxValue - minValue) * 0.1;
+  return [Math.max(0, minValue - padding), maxValue + padding];
+}
 
 
 
@@ -221,22 +300,38 @@ const CustomHistogramTooltip = ({
 const CustomMorphologyTooltip = ({ active, payload, activeBiomeLabel }: BaseTooltipProps<MorphologyBubbleDatum> & { activeBiomeLabel: string }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload as MorphologyBubbleDatum;
+    const isFaunaPoint = data.metricType === 'fauna';
     return (
       <div className="w-64 border border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground rounded shadow-lg shadow-black/50 outline-none z-50">
         <p className="text-sm font-semibold">{data.name}</p>
         <div className="mt-2 space-y-1 text-xs">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground">Trees on map</span>
+            <span className="text-muted-foreground">{isFaunaPoint ? 'Animals on map' : 'Trees on map'}</span>
             <span className="font-medium">{data.count}</span>
           </div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground">Avg height</span>
-            <span className="font-medium">{data.averageHeight.toFixed(1)} m</span>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground">Avg width</span>
-            <span className="font-medium">{data.averageWidth.toFixed(1)} m</span>
-          </div>
+          {isFaunaPoint ? (
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Avg weight</span>
+                <span className="font-medium">{(data.averageWeightKg ?? 0).toFixed(3)} kg</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Avg length / height</span>
+                <span className="font-medium">{(data.averageSizeCm ?? 0).toFixed(1)} cm</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Avg height</span>
+                <span className="font-medium">{(data.averageHeight ?? 0).toFixed(1)} m</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Avg width</span>
+                <span className="font-medium">{(data.averageWidth ?? 0).toFixed(1)} m</span>
+              </div>
+            </>
+          )}
           <div className="flex items-center justify-between gap-2">
             <span className="text-muted-foreground">Map</span>
             <span className="max-w-[120px] truncate text-right font-medium" title={activeBiomeLabel}>{activeBiomeLabel}</span>
@@ -542,26 +637,54 @@ const StatisticsDashboard = () => {
 
   const confidenceCategoryLabel = activeTab === 'flora' ? 'Flora' : 'Fauna';
 
+  const activeMorphologySpeciesDimensions = useMemo<Record<string, MorphologySpeciesDimension>>(
+    () =>
+      activeTab === 'fauna'
+        ? MORPHOLOGY_FAUNA_SPECIES_DIMENSIONS
+        : MORPHOLOGY_FLORA_SPECIES_DIMENSIONS,
+    [activeTab]
+  );
+
   const morphologyBubbleData = useMemo<MorphologyBubbleDatum[]>(() => {
     const detections = detectionsQuery.data ?? [];
     const counts: Record<string, number> = {};
-    const labelScope = labelsQuery.data ? labelsQuery.data.map(l => l.name) : Object.keys(MORPHOLOGY_SPECIES_DIMENSIONS);
+    const labelScope = labelsQuery.data ? labelsQuery.data.map((label) => label.name) : Object.keys(activeMorphologySpeciesDimensions);
 
     detections.forEach((detection) => {
       const speciesName = detection.name;
-      if (MORPHOLOGY_SPECIES_DIMENSIONS[speciesName]) {
+      if (activeMorphologySpeciesDimensions[speciesName]) {
         counts[speciesName] = (counts[speciesName] || 0) + 1;
       }
     });
 
-    const entries = Object.entries(MORPHOLOGY_SPECIES_DIMENSIONS)
+    const entries = Object.entries(activeMorphologySpeciesDimensions)
       .map(([speciesName, dimensions]) => {
         const count = counts[speciesName] || 0;
         const color = getLabelColorValue(speciesName, labelScope);
+        const metricType = activeTab;
+
+        if (isFaunaMorphologyDimension(dimensions)) {
+          return {
+            id: speciesName.toLowerCase().replace(/\s+/g, '-'),
+            name: speciesName,
+            metricType,
+            xValue: dimensions.averageWeightKg,
+            yValue: dimensions.averageSizeCm,
+            averageWeightKg: dimensions.averageWeightKg,
+            averageSizeCm: dimensions.averageSizeCm,
+            count,
+            bubbleSize: count,
+            fill: color.replace(')', ' / 0.8)').replace('hsl', 'hsl'),
+            stroke: color,
+          };
+        }
 
         return {
           id: speciesName.toLowerCase().replace(/\s+/g, '-'),
           name: speciesName,
+          metricType,
+          xValue: dimensions.averageWidth,
+          yValue: dimensions.averageHeight,
           averageHeight: dimensions.averageHeight,
           averageWidth: dimensions.averageWidth,
           count,
@@ -573,7 +696,35 @@ const StatisticsDashboard = () => {
       .filter((entry) => entry.count > 0);
 
     return entries;
-  }, [detectionsQuery.data, labelsQuery.data]);
+  }, [activeMorphologySpeciesDimensions, activeTab, detectionsQuery.data, labelsQuery.data]);
+
+  const morphologyChartConfig = useMemo(() => {
+    if (activeTab === 'fauna') {
+      return {
+        title: 'Fauna Morphology Plot',
+        subtitle: 'Average weight vs. length/height and number of animals on the selected map',
+        xLabel: 'Weight (kg)',
+        yLabel: 'Length / Height (cm)',
+        xDomain: buildNumericDomain(
+          morphologyBubbleData.map((entry) => entry.xValue),
+          [0, 100]
+        ),
+        yDomain: buildNumericDomain(
+          morphologyBubbleData.map((entry) => entry.yValue),
+          [0, 200]
+        ),
+      };
+    }
+
+    return {
+      title: 'Tree Morphology Plot',
+      subtitle: 'Average dimensions vs. number of trees on the selected map',
+      xLabel: 'Width (m)',
+      yLabel: 'Height (m)',
+      xDomain: [0, 25] as [number, number],
+      yDomain: [0, 50] as [number, number],
+    };
+  }, [activeTab, morphologyBubbleData]);
 
   const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
   const isExportDisabled = labelsQuery.isLoading || detectionsQuery.isLoading;
@@ -780,72 +931,71 @@ const StatisticsDashboard = () => {
             </div>
 
             <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5 min-h-[310px]">
-              <h3 className="text-2xl font-semibold leading-none">Tree Morphology Plot</h3>
-              <p className="text-sm text-muted-foreground">Average dimensions vs. number of trees on the selected map</p>
+              <h3 className="text-2xl font-semibold leading-none">{morphologyChartConfig.title}</h3>
+              <p className="text-sm text-muted-foreground">{morphologyChartConfig.subtitle}</p>
 
-              {activeTab === 'flora' ? (
-                <>
-                  <div className="mt-4 h-[350px] rounded-2xl border border-emerald-900/30 bg-[#041b13] p-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 0, right: 0, bottom: 10, left: 0 }}>
-                        <CartesianGrid strokeDasharray="4 4" stroke="rgba(16,185,129,0.16)" />
-                        <XAxis
-                          type="number"
-                          dataKey="averageWidth"
-                          name="Width"
-                          domain={[0, 25]}
-                          tick={{ fill: '#94a3b8', fontSize: 10 }}
-                          tickLine={false}
-                          axisLine={{ stroke: 'rgba(6, 78, 59, 0.4)' }}
-                          label={{ value: 'Width (m)', position: 'insideBottom', offset: -10, fill: '#94a3b8', fontSize: 10 }}
+              <div className="mt-4 h-[350px] rounded-2xl border border-emerald-900/30 bg-[#041b13] p-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart margin={{ top: 0, right: 0, bottom: 10, left: 0 }}>
+                    <CartesianGrid strokeDasharray="4 4" stroke="rgba(16,185,129,0.16)" />
+                    <XAxis
+                      type="number"
+                      dataKey="xValue"
+                      name={morphologyChartConfig.xLabel}
+                      domain={morphologyChartConfig.xDomain}
+                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={{ stroke: 'rgba(6, 78, 59, 0.4)' }}
+                      label={{ value: morphologyChartConfig.xLabel, position: 'insideBottom', offset: -10, fill: '#94a3b8', fontSize: 10 }}
+                    />
+                    <YAxis
+                      type="number"
+                      dataKey="yValue"
+                      name={morphologyChartConfig.yLabel}
+                      domain={morphologyChartConfig.yDomain}
+                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={{ stroke: 'rgba(6, 78, 59, 0.4)' }}
+                      label={{ value: morphologyChartConfig.yLabel, angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10 }}
+                    />
+                    <ZAxis type="number" dataKey="bubbleSize" range={[320, 1500]} />
+                    <RechartsTooltip
+                      content={<CustomMorphologyTooltip activeBiomeLabel={activeBiome.label} />}
+                      cursor={{ stroke: 'rgba(16, 185, 129, 0.35)', strokeDasharray: '4 4' }}
+                      wrapperStyle={{ zIndex: 100 }}
+                    />
+                    <Legend
+                      verticalAlign="top"
+                      align="right"
+                      wrapperStyle={{ fontSize: '11px', paddingBottom: '10px' }}
+                      iconType="circle"
+                    />
+                    {morphologyBubbleData.map((entry) => (
+                      <Scatter
+                        key={`morphology-scatter-${entry.id}`}
+                        name={entry.name}
+                        data={[entry]}
+                        fill={entry.fill}
+                        isAnimationActive={false}
+                      >
+                        <Cell
+                          fill={entry.fill}
+                          stroke={entry.stroke}
+                          strokeWidth={2}
+                          fillOpacity={0.88}
                         />
-                        <YAxis
-                          type="number"
-                          dataKey="averageHeight"
-                          name="Height"
-                          domain={[0, 50]}
-                          tick={{ fill: '#94a3b8', fontSize: 10 }}
-                          tickLine={false}
-                          axisLine={{ stroke: 'rgba(6, 78, 59, 0.4)' }}
-                          label={{ value: 'Height (m)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10 }}
-                        />
-                        <ZAxis type="number" dataKey="bubbleSize" range={[320, 1500]} />
-                        <RechartsTooltip
-                          content={<CustomMorphologyTooltip activeBiomeLabel={activeBiome.label} />}
-                          cursor={{ stroke: 'rgba(16, 185, 129, 0.35)', strokeDasharray: '4 4' }}
-                          wrapperStyle={{ zIndex: 100 }}
-                        />
-                        <Legend
-                          verticalAlign="top"
-                          align="right"
-                          wrapperStyle={{ fontSize: '11px', paddingBottom: '10px' }}
-                          iconType="circle"
-                        />
-                        {morphologyBubbleData.map((entry, index) => (
-                          <Scatter
-                            key={`morphology-scatter-${entry.id}`}
-                            name={entry.name}
-                            data={[entry]}
-                            fill={entry.fill}
-                            isAnimationActive={false}
-                          >
-                            <Cell
-                              fill={entry.fill}
-                              stroke={entry.stroke}
-                              strokeWidth={2}
-                              fillOpacity={0.88}
-                            />
-                          </Scatter>
-                        ))}
-                      </ScatterChart>
-                    </ResponsiveContainer>
+                      </Scatter>
+                    ))}
+                  </ScatterChart>
+                </ResponsiveContainer>
+                {morphologyBubbleData.length === 0 && (
+                  <div className="mt-2 flex justify-center">
+                    <p className="rounded-md bg-[#041b13]/90 px-3 py-1 text-xs text-muted-foreground">
+                      No morphology detections for the current filters.
+                    </p>
                   </div>
-                </>
-              ) : (
-                <div className="mt-5 flex h-[250px] items-center justify-center rounded-2xl border border-emerald-900/30 bg-[#041b13] px-6 text-center">
-                  <p className="text-sm text-muted-foreground">Morphology plot is available on flora data only.</p>
-                </div>
-              )}
+                )}
+              </div>
             </section>
 
             <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5 min-h-[310px]">

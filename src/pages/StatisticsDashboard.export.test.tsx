@@ -1,5 +1,7 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cloneElement, isValidElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import StatisticsDashboard from './StatisticsDashboard';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from '@/components/ui/sonner';
@@ -60,6 +62,24 @@ vi.mock('@/lib/csvExport', async () => {
   return {
     ...actual,
     downloadCsvFile: vi.fn(),
+  };
+});
+
+vi.mock('recharts', async () => {
+  const actual = await vi.importActual<typeof import('recharts')>('recharts');
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children: ReactNode }) => {
+      const child = Array.isArray(children) ? children[0] : children;
+      if (isValidElement(child)) {
+        return cloneElement(child as ReactElement<{ width?: number; height?: number }>, {
+          width: 800,
+          height: 400,
+        });
+      }
+
+      return <div>{children}</div>;
+    },
   };
 });
 
@@ -305,7 +325,7 @@ describe('StatisticsDashboard export behavior', () => {
     expect(screen.queryByText('No species data available')).not.toBeInTheDocument();
   });
 
-  it('builds morphology summaries from mapped flora species and ignores non-target plants', () => {
+  it('keeps flora morphology chart active on flora tab', () => {
     const detections = [
       {
         id: 1,
@@ -422,27 +442,85 @@ describe('StatisticsDashboard export behavior', () => {
 
     render(<StatisticsDashboard />);
 
-    const tallThinSummary = screen.getByTestId('morphology-summary-tall-thin');
-    const giantsSummary = screen.getByTestId('morphology-summary-giants');
-    const smallDelicateSummary = screen.getByTestId('morphology-summary-small-delicate');
-
-    expect(within(tallThinSummary).getByText('3 trees')).toBeInTheDocument();
-    expect(within(giantsSummary).getByText('3 trees')).toBeInTheDocument();
-    expect(within(smallDelicateSummary).getByText('1 trees')).toBeInTheDocument();
-
-    expect(within(tallThinSummary).getByText('Avg Height: 27.5 m')).toBeInTheDocument();
-    expect(within(tallThinSummary).getByText('Avg Width: 7.8 m')).toBeInTheDocument();
-    expect(within(giantsSummary).getByText('Avg Height: 28.8 m')).toBeInTheDocument();
-    expect(within(giantsSummary).getByText('Avg Width: 15.0 m')).toBeInTheDocument();
-    expect(within(smallDelicateSummary).getByText('Avg Height: 7.5 m')).toBeInTheDocument();
-    expect(within(smallDelicateSummary).getByText('Avg Width: 4.5 m')).toBeInTheDocument();
+    expect(screen.getByText('Tree Morphology Plot')).toBeInTheDocument();
+    expect(screen.getByText('Average dimensions vs. number of trees on the selected map')).toBeInTheDocument();
+    expect(screen.queryByText('No morphology detections for the current filters.')).not.toBeInTheDocument();
   });
 
-  it('shows flora-only fallback message when switching to fauna tab', () => {
+  it('renders fauna morphology chart with weight and size axes when switching to fauna tab', () => {
+    const detections = [
+      {
+        id: 1,
+        name: 'Beaver',
+        timestamp: '2026-01-01T00:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 90,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+      {
+        id: 2,
+        name: 'Beaver',
+        timestamp: '2026-01-01T01:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 91,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+      {
+        id: 3,
+        name: 'Lynx',
+        timestamp: '2026-01-01T02:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 92,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+    ];
+
+    const faunaLabelsQueryResult = {
+      ...LABELS_QUERY_RESULT,
+      data: [
+        { name: 'Beaver', group: 'fauna', count: 2 },
+        { name: 'Lynx', group: 'fauna', count: 1 },
+      ],
+    };
+
+    vi.mocked(useQuery).mockImplementation(
+      ((options: { queryKey: unknown[] }) => {
+        const scope = String(options.queryKey[0]);
+
+        if (scope === 'dashboard-labels') {
+          const tab = String(options.queryKey[2]);
+          if (tab === 'fauna') {
+            return faunaLabelsQueryResult;
+          }
+          return LABELS_QUERY_RESULT;
+        }
+
+        return {
+          ...DETECTIONS_QUERY_RESULT,
+          data: detections,
+        };
+      }) as never
+    );
+
     render(<StatisticsDashboard />);
 
     fireEvent.click(screen.getByRole('button', { name: /fauna tab/i }));
 
-    expect(screen.getByText('Morphology plot is available on flora data only.')).toBeInTheDocument();
+    expect(screen.getByText('Fauna Morphology Plot')).toBeInTheDocument();
+    expect(screen.getByText('Average weight vs. length/height and number of animals on the selected map')).toBeInTheDocument();
+    expect(screen.queryByText('No morphology detections for the current filters.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Morphology plot is available on flora data only.')).not.toBeInTheDocument();
   });
 });
