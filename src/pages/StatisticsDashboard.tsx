@@ -460,7 +460,9 @@ const StatisticsDashboard = () => {
     if (sortedSpecies.length === 0) return [];
 
     const maxCount = sortedSpecies[0][1].count;
-    const labelScope = sortedSpecies.map((s) => s[0]);
+    const labelScope = labelsQuery.data
+      ? labelsQuery.data.map((label) => label.name)
+      : sortedSpecies.map((species) => species[0]);
 
     return sortedSpecies.map(([name, summary]) => ({
       name,
@@ -472,7 +474,7 @@ const StatisticsDashboard = () => {
       height: Math.max(Math.round((summary.count / maxCount) * 100), 5),
       color: getLabelColorValue(name, labelScope),
     }));
-  }, [activeBiome.label, detectionsQuery.data]);
+  }, [activeBiome.label, detectionsQuery.data, labelsQuery.data]);
 
   const confidenceHistogramStats = useMemo(() => {
     const detections = detectionsQuery.data ?? [];
