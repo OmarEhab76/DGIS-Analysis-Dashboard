@@ -162,7 +162,7 @@ const Sidebar = ({
     });
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-card border-r border-border p-4 flex flex-col gap-5 overflow-y-auto">
+    <aside className="w-80 flex-shrink-0 bg-card border-r border-border p-4 flex flex-col gap-5 overflow-y-auto">
       <div>
         <h2 className="text-sm font-semibold text-foreground">Filters</h2>
         <p className="text-xs text-muted-foreground">Refine your analysis parameters</p>
