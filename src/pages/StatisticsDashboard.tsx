@@ -2,6 +2,7 @@ import { Trees, Bug } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import Navbar from '@/components/dashboard/Navbar';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -22,17 +23,17 @@ const confidenceBinStarts = Array.from(
 );
 
 const confidenceBinColors = [
-  'bg-[rgb(2,44,34)]',
-  'bg-[rgb(4,60,46)]',
-  'bg-[rgb(6,78,59)]',
-  'bg-[rgb(6,95,70)]',
-  'bg-[rgb(5,120,87)]',
-  'bg-[rgb(4,143,105)]',
-  'bg-[rgb(6,173,124)]',
-  'bg-[rgb(16,185,129)]',
-  'bg-[rgb(52,211,153)]',
-  'bg-[rgb(110,231,183)]',
-  'bg-[rgb(167,243,208)]',
+  'rgb(2,44,34)',
+  'rgb(4,60,46)',
+  'rgb(6,78,59)',
+  'rgb(6,95,70)',
+  'rgb(5,120,87)',
+  'rgb(4,143,105)',
+  'rgb(6,173,124)',
+  'rgb(16,185,129)',
+  'rgb(52,211,153)',
+  'rgb(110,231,183)',
+  'rgb(167,243,208)',
 ];
 
 const taxonomyMap: Record<string, string> = {
@@ -73,6 +74,92 @@ const taxonomyMap: Record<string, string> = {
   'Agave': 'Succulents & Desert Plants', 'Cactus': 'Succulents & Desert Plants', 'Aloe Vera Plant': 'Succulents & Desert Plants',
   // Flora: Flowering/Medicinal Plants
   'Salvia Plant': 'Flowering/Medicinal Plants',
+};
+
+const CustomPieTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="w-56 border border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground rounded shadow-lg shadow-black/50 outline-none z-50">
+        <p className="text-sm font-semibold">{data.name}</p>
+        <div className="mt-2 space-y-1 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Count</span>
+            <span className="font-medium">{data.value}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Percentage</span>
+            <span className="font-medium">{data.percent}%</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomBarTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="w-52 border border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground rounded shadow-lg shadow-black/50 outline-none z-50">
+        <p className="text-sm font-semibold">{data.name}</p>
+        <div className="mt-2 space-y-1 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Count</span>
+            <span className="font-medium">{data.count}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Taxonomy</span>
+            <span className="max-w-[110px] truncate text-right font-medium" title={data.taxonomyCategory}>{data.taxonomyCategory}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Avg confidence</span>
+            <span className="font-medium">{data.avgConfidencePercent.toFixed(1)}%</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Map</span>
+            <span className="max-w-[110px] truncate text-right font-medium" title={data.mapLabel}>{data.mapLabel}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomHistogramTooltip = ({ active, payload, activeBiomeLabel, categoryLabel }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="w-56 border border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground rounded shadow-lg shadow-black/50 outline-none z-50">
+        <p className="text-sm font-semibold">Confidence Bin</p>
+        <div className="mt-2 space-y-1 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Range</span>
+            <span className="font-medium">{data.rangeLabel}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Detections</span>
+            <span className="font-medium">{data.count}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Avg confidence</span>
+            <span className="font-medium">{data.avgConfidence.toFixed(1)}%</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Map</span>
+            <span className="max-w-[110px] truncate text-right font-medium" title={activeBiomeLabel}>{activeBiomeLabel}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Category</span>
+            <span className="font-medium">{categoryLabel}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
 };
 
 const StatisticsDashboard = () => {
@@ -228,20 +315,6 @@ const StatisticsDashboard = () => {
   const amphibiansPct = taxonomyStats.total > 0 ? Math.round((taxonomyStats.amphibians / taxonomyStats.total) * 100) : 0;
   const arachnidsPct = taxonomyStats.total > 0 ? Math.round((taxonomyStats.arachnids / taxonomyStats.total) * 100) : 0;
 
-  const mammalsAngle = taxonomyStats.total > 0 ? (taxonomyStats.mammals / taxonomyStats.total) * 360 : 0;
-  const birdsAngle = taxonomyStats.total > 0 ? (taxonomyStats.birds / taxonomyStats.total) * 360 : 0;
-  const reptilesAngle = taxonomyStats.total > 0 ? (taxonomyStats.reptiles / taxonomyStats.total) * 360 : 0;
-  const amphibiansAngle = taxonomyStats.total > 0 ? (taxonomyStats.amphibians / taxonomyStats.total) * 360 : 0;
-  const arachnidsAngle = taxonomyStats.total > 0 ? (taxonomyStats.arachnids / taxonomyStats.total) * 360 : 0;
-
-  const grad1 = mammalsAngle;
-  const grad2 = grad1 + birdsAngle;
-  const grad3 = grad2 + reptilesAngle;
-  const grad4 = grad3 + amphibiansAngle;
-  const taxonomyGradient = taxonomyStats.total > 0
-    ? `conic-gradient(rgb(74 222 128) 0deg ${grad1}deg, rgb(253 230 138) ${grad1}deg ${grad2}deg, rgb(251 113 133) ${grad2}deg ${grad3}deg, rgb(96 165 250) ${grad3}deg ${grad4}deg, rgb(192 132 252) ${grad4}deg 360deg)`
-    : 'none';
-
   const conifersPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.conifers / floraTaxonomyStats.total) * 100) : 0;
   const broadleafPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.broadleaf / floraTaxonomyStats.total) * 100) : 0;
   const desertTropicalPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.desertTropical / floraTaxonomyStats.total) * 100) : 0;
@@ -249,22 +322,32 @@ const StatisticsDashboard = () => {
   const succulentsDesertPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.succulentsDesert / floraTaxonomyStats.total) * 100) : 0;
   const floweringMedicinalPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.floweringMedicinal / floraTaxonomyStats.total) * 100) : 0;
 
-  const conifersAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.conifers / floraTaxonomyStats.total) * 360 : 0;
-  const broadleafAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.broadleaf / floraTaxonomyStats.total) * 360 : 0;
-  const desertTropicalAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.desertTropical / floraTaxonomyStats.total) * 360 : 0;
-  const herbsGroundAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.herbsGround / floraTaxonomyStats.total) * 360 : 0;
-  const succulentsDesertAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.succulentsDesert / floraTaxonomyStats.total) * 360 : 0;
-  const floweringMedicinalAngle = floraTaxonomyStats.total > 0 ? (floraTaxonomyStats.floweringMedicinal / floraTaxonomyStats.total) * 360 : 0;
-
-  const fGrad1 = conifersAngle;
-  const fGrad2 = fGrad1 + broadleafAngle;
-  const fGrad3 = fGrad2 + desertTropicalAngle;
-  const fGrad4 = fGrad3 + herbsGroundAngle;
-  const fGrad5 = fGrad4 + succulentsDesertAngle;
-
-  const floraTaxonomyGradient = floraTaxonomyStats.total > 0
-    ? `conic-gradient(rgb(6 78 59) 0deg ${fGrad1}deg, rgb(16 185 129) ${fGrad1}deg ${fGrad2}deg, rgb(252 211 77) ${fGrad2}deg ${fGrad3}deg, rgb(244 114 182) ${fGrad3}deg ${fGrad4}deg, rgb(251 146 60) ${fGrad4}deg ${fGrad5}deg, rgb(167 139 250) ${fGrad5}deg 360deg)`
-    : 'none';
+  const pieData = useMemo(() => {
+    if (activeTab === 'fauna') {
+      const data = [
+        { name: 'Mammals', value: taxonomyStats.mammals, fill: 'rgb(74, 222, 128)', percent: mammalsPct },
+        { name: 'Birds', value: taxonomyStats.birds, fill: 'rgb(253, 230, 138)', percent: birdsPct },
+        { name: 'Reptiles', value: taxonomyStats.reptiles, fill: 'rgb(251, 113, 133)', percent: reptilesPct },
+        { name: 'Amphibians', value: taxonomyStats.amphibians, fill: 'rgb(96, 165, 250)', percent: amphibiansPct },
+        { name: 'Arachnids', value: taxonomyStats.arachnids, fill: 'rgb(192, 132, 252)', percent: arachnidsPct },
+      ];
+      return data.filter(d => d.value > 0);
+    } else {
+      const data = [
+        { name: 'Gymnosperms', value: floraTaxonomyStats.conifers, fill: 'rgb(6, 78, 59)', percent: conifersPct },
+        { name: 'Broadleaf', value: floraTaxonomyStats.broadleaf, fill: 'rgb(16, 185, 129)', percent: broadleafPct },
+        { name: 'Desert / Tropical', value: floraTaxonomyStats.desertTropical, fill: 'rgb(252, 211, 77)', percent: desertTropicalPct },
+        { name: 'Herbs / Ground', value: floraTaxonomyStats.herbsGround, fill: 'rgb(244, 114, 182)', percent: herbsGroundPct },
+        { name: 'Succulents', value: floraTaxonomyStats.succulentsDesert, fill: 'rgb(251, 146, 60)', percent: succulentsDesertPct },
+        { name: 'Flowering/Medicinal', value: floraTaxonomyStats.floweringMedicinal, fill: 'rgb(167, 139, 250)', percent: floweringMedicinalPct },
+      ];
+      return data.filter(d => d.value > 0);
+    }
+  }, [
+    activeTab, taxonomyStats, floraTaxonomyStats,
+    mammalsPct, birdsPct, reptilesPct, amphibiansPct, arachnidsPct,
+    conifersPct, broadleafPct, desertTropicalPct, herbsGroundPct, succulentsDesertPct, floweringMedicinalPct
+  ]);
 
   const speciesCountStats = useMemo(() => {
     if (!detectionsQuery.data || detectionsQuery.data.length === 0) {
@@ -345,7 +428,7 @@ const StatisticsDashboard = () => {
         rangeLabel,
         count: summary.count,
         avgConfidence,
-        colorClass: confidenceBinColors[index],
+        color: confidenceBinColors[index],
       };
     });
 
@@ -531,16 +614,40 @@ const StatisticsDashboard = () => {
                   </div>
 
                   <div
-                    className={`relative h-44 w-44 rounded-full ${
+                    className={`relative h-44 w-44 ${
                       (activeTab === 'fauna' && taxonomyStats.total === 0) || (activeTab === 'flora' && floraTaxonomyStats.total === 0) 
-                        ? 'bg-emerald-900/20' 
+                        ? 'rounded-full bg-emerald-900/20' 
                         : ''
                     }`}
-                    style={{
-                      background: activeTab === 'fauna' ? taxonomyGradient : floraTaxonomyGradient,
-                    }}
                   >
-                    <div className="absolute inset-[17%] grid place-items-center rounded-full border border-emerald-900/40 bg-[#052015]">
+                    {pieData.length > 0 && (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius="65%"
+                            outerRadius="100%"
+                            stroke="none"
+                            dataKey="value"
+                            startAngle={90}
+                            endAngle={-270}
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip 
+                            content={<CustomPieTooltip />} 
+                            cursor={{fill: 'transparent'}} 
+                            wrapperStyle={{ zIndex: 100 }} 
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+
+                    <div className="absolute inset-[17%] grid place-items-center rounded-full border border-emerald-900/40 bg-[#052015] pointer-events-none">
                       <div className="text-center">
                         <p className="text-4xl font-bold leading-none">{activeTab === 'fauna' ? taxonomyStats.total : floraTaxonomyStats.total}</p>
                         <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">Classified</p>
@@ -597,55 +704,36 @@ const StatisticsDashboard = () => {
                 </div>
               </div>
 
-              <div className="mt-8">
-                <div className="flex h-40 items-end gap-1.5">
-                  {confidenceHistogramStats.bins.map((bin) => (
-                    <div key={bin.label} className="flex flex-1">
-                      <HoverCard openDelay={120}>
-                        <HoverCardTrigger asChild>
-                          <button
-                            type="button"
-                            className={`w-full rounded-t-sm border border-emerald-950/40 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${bin.colorClass} ${bin.count > 0 ? 'opacity-95 hover:opacity-100' : 'opacity-30'}`}
-                            style={{ height: `${bin.height}%` }}
-                            aria-label={`Show confidence details for ${bin.rangeLabel} bin`}
-                          />
-                        </HoverCardTrigger>
-                        <HoverCardContent side="top" align="center" className="w-56 border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground">
-                          <p className="text-sm font-semibold">Confidence Bin</p>
-                          <div className="mt-2 space-y-1 text-xs">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-muted-foreground">Range</span>
-                              <span className="font-medium">{bin.rangeLabel}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-muted-foreground">Detections</span>
-                              <span className="font-medium">{bin.count}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-muted-foreground">Avg confidence</span>
-                              <span className="font-medium">{bin.avgConfidence.toFixed(1)}%</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-muted-foreground">Map</span>
-                              <span className="max-w-[110px] truncate text-right font-medium" title={activeBiome.label}>{activeBiome.label}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-muted-foreground">Category</span>
-                              <span className="font-medium">{confidenceCategoryLabel}</span>
-                            </div>
-                          </div>
-                        </HoverCardContent>
-                      </HoverCard>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-2 grid grid-cols-11 text-[10px] text-muted-foreground">
-                  {confidenceHistogramStats.bins.map((bin) => (
-                    <span key={bin.label} className="text-center">
-                      {bin.label}
-                    </span>
-                  ))}
-                </div>
+              <div className="mt-8 relative h-[180px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={confidenceHistogramStats.bins}
+                    margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+                    barCategoryGap={6}
+                  >
+                    <XAxis 
+                      dataKey="label" 
+                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis hide />
+                    <RechartsTooltip 
+                      content={<CustomHistogramTooltip activeBiomeLabel={activeBiome.label} categoryLabel={confidenceCategoryLabel} />} 
+                      cursor={{ fill: 'rgba(6, 78, 59, 0.1)' }}
+                      wrapperStyle={{ zIndex: 100 }} 
+                    />
+                    <Bar dataKey="height" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                      {confidenceHistogramStats.bins.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.color} 
+                          fillOpacity={entry.count > 0 ? 0.95 : 0.3}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </section>
 
@@ -653,77 +741,55 @@ const StatisticsDashboard = () => {
               <h3 className="text-2xl font-semibold leading-none">Species Count</h3>
               <p className="text-sm text-muted-foreground">Comparing the frequency of top species</p>
 
-              <div className="relative mt-8 flex flex-1 w-full pl-4">
-                <span className="absolute -left-2 top-1/2 -ml-3 -translate-y-1/2 -rotate-90 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Count
-                </span>
-
-                <div className="flex w-full h-[220px] gap-3">
-                  <div className="flex h-[200px] w-8 flex-col justify-between text-right text-[10px] text-muted-foreground">
-                    <span>{speciesCountStats.length > 0 ? speciesCountStats[0].maxCount : 100}</span>
-                    <span>{speciesCountStats.length > 0 ? Math.round(speciesCountStats[0].maxCount * 0.75) : 75}</span>
-                    <span>{speciesCountStats.length > 0 ? Math.round(speciesCountStats[0].maxCount * 0.5) : 50}</span>
-                    <span>{speciesCountStats.length > 0 ? Math.round(speciesCountStats[0].maxCount * 0.25) : 25}</span>
-                    <span>0</span>
+              <div className="relative mt-8 flex flex-1 w-full h-[250px] min-h-[250px]">
+                {speciesCountStats.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={speciesCountStats}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 20 }}
+                    >
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fill: '#94a3b8', fontSize: 10 }}
+                        axisLine={{ stroke: 'rgba(6, 78, 59, 0.4)' }}
+                        tickLine={false}
+                        interval={0}
+                        tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 10)}...` : value}
+                      />
+                      <YAxis 
+                        tick={{ fill: '#94a3b8', fontSize: 10 }}
+                        axisLine={{ stroke: 'rgba(6, 78, 59, 0.4)' }}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
+                      <RechartsTooltip 
+                        content={<CustomBarTooltip />} 
+                        cursor={{ fill: 'rgba(6, 78, 59, 0.1)' }}
+                        wrapperStyle={{ zIndex: 100 }} 
+                      />
+                      <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                        {speciesCountStats.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+                    No species data available
                   </div>
-
-                  <div className="flex flex-1 flex-col w-full h-full">
-                    <div className="flex h-[200px] w-full items-end justify-between gap-4 border-b border-l border-emerald-900/40 px-4">
-                      {speciesCountStats.length > 0 ? (
-                        speciesCountStats.map((item) => (
-                          <div key={item.name} className="group relative flex h-full flex-1 flex-col items-center justify-end">
-                            <HoverCard openDelay={160}>
-                              <HoverCardTrigger asChild>
-                                <button
-                                  type="button"
-                                  className="w-full max-w-[64px] cursor-pointer appearance-none rounded-t-sm border-0 bg-transparent p-0 opacity-90 transition-all group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                                  style={{ height: `${item.height}%`, backgroundColor: item.color }}
-                                  aria-label={`Show details for ${item.name}`}
-                                />
-                              </HoverCardTrigger>
-                              <HoverCardContent side="top" align="center" className="w-52 border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground">
-                                <p className="text-sm font-semibold">{item.name}</p>
-                                <div className="mt-2 space-y-1 text-xs">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="text-muted-foreground">Count</span>
-                                    <span className="font-medium">{item.count}</span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="text-muted-foreground">Taxonomy</span>
-                                    <span className="max-w-[110px] truncate text-right font-medium" title={item.taxonomyCategory}>{item.taxonomyCategory}</span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="text-muted-foreground">Avg confidence</span>
-                                    <span className="font-medium">{item.avgConfidencePercent.toFixed(1)}%</span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="text-muted-foreground">Map</span>
-                                    <span className="max-w-[110px] truncate text-right font-medium" title={item.mapLabel}>{item.mapLabel}</span>
-                                  </div>
-                                </div>
-                              </HoverCardContent>
-                            </HoverCard>
-                            <div className="absolute -bottom-6 w-full text-center">
-                              <span 
-                                className="block truncate px-1 text-[10px] text-muted-foreground" 
-                                title={item.name}
-                              >
-                                {item.name}
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                          No species data available
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-8 text-center text-[10px] uppercase tracking-wider text-muted-foreground">
+                )}
+                
+                {speciesCountStats.length > 0 && (
+                  <>
+                    <span className="absolute -left-2 top-1/2 -ml-3 -translate-y-1/2 -rotate-90 text-[10px] uppercase tracking-wider text-muted-foreground pointer-events-none">
+                      Count
+                    </span>
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-muted-foreground pointer-events-none">
                       Species
-                    </div>
-                  </div>
-                </div>
+                    </span>
+                  </>
+                )}
               </div>
             </section>
           </div>
