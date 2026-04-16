@@ -4,18 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/dashboard/Navbar';
 import Sidebar from '@/components/dashboard/Sidebar';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { toast } from '@/components/ui/sonner';
 import { BIOME_NO_DATA_STATS, BIOME_OPTIONS, getBiomeLabels } from '@/data/mockData';
 import { buildDetectionsCsv, buildExportFilename, downloadCsvFile } from '@/lib/csvExport';
 import { getDetections, getLabels, getStats } from '@/lib/dashboardApi';
+import { getLabelColorValue } from '@/lib/labelColors';
 import { BiomeId, DashboardTab, Filters } from '@/types/dashboard';
-
-const speciesBars = [
-  { name: 'Lavender', height: 57, color: 'bg-violet-400/80' },
-  { name: 'Sunflower', height: 78, color: 'bg-amber-200' },
-  { name: 'Loropetalum', height: 40, color: 'bg-rose-400/90' },
-  { name: 'Vines', height: 28, color: 'bg-emerald-700/70' },
-];
 
 const confidenceBars = [
   { label: '50%', value: 5 },
@@ -262,6 +257,45 @@ const StatisticsDashboard = () => {
     ? `conic-gradient(rgb(6 78 59) 0deg ${fGrad1}deg, rgb(16 185 129) ${fGrad1}deg ${fGrad2}deg, rgb(252 211 77) ${fGrad2}deg ${fGrad3}deg, rgb(244 114 182) ${fGrad3}deg ${fGrad4}deg, rgb(251 146 60) ${fGrad4}deg ${fGrad5}deg, rgb(167 139 250) ${fGrad5}deg 360deg)`
     : 'none';
 
+  const speciesCountStats = useMemo(() => {
+    if (!detectionsQuery.data || detectionsQuery.data.length === 0) {
+      return [];
+    }
+
+    const speciesAggregates = detectionsQuery.data.reduce((acc, detection) => {
+      if (!acc[detection.name]) {
+        acc[detection.name] = {
+          count: 0,
+          confidenceSum: 0,
+        };
+      }
+
+      acc[detection.name].count += 1;
+      acc[detection.name].confidenceSum += detection.confidence;
+      return acc;
+    }, {} as Record<string, { count: number; confidenceSum: number }>);
+
+    const sortedSpecies = (Object.entries(speciesAggregates) as [string, { count: number; confidenceSum: number }][])
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 5);
+
+    if (sortedSpecies.length === 0) return [];
+
+    const maxCount = sortedSpecies[0][1].count;
+    const labelScope = sortedSpecies.map((s) => s[0]);
+
+    return sortedSpecies.map(([name, summary]) => ({
+      name,
+      count: summary.count,
+      maxCount,
+      taxonomyCategory: taxonomyMap[name] ?? 'Uncategorized',
+      avgConfidencePercent: summary.count > 0 ? summary.confidenceSum / summary.count : 0,
+      mapLabel: activeBiome.label,
+      height: Math.max(Math.round((summary.count / maxCount) * 100), 5),
+      color: getLabelColorValue(name, labelScope),
+    }));
+  }, [activeBiome.label, detectionsQuery.data]);
+
   const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
   const isExportDisabled = labelsQuery.isLoading || detectionsQuery.isLoading;
 
@@ -507,23 +541,81 @@ const StatisticsDashboard = () => {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5 min-h-[280px]">
+            <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5 min-h-[380px] flex flex-col">
               <h3 className="text-2xl font-semibold leading-none">Species Count</h3>
-              <p className="text-sm text-muted-foreground">Comparing the frequency of different species</p>
+              <p className="text-sm text-muted-foreground">Comparing the frequency of top species</p>
 
-              <div className="mt-8 h-44 border-l border-b border-emerald-900/40 px-6 pb-3">
-                <div className="flex h-full items-end justify-between gap-6">
-                  {speciesBars.map((item) => (
-                    <div key={item.name} className="flex flex-1 flex-col items-center gap-2">
-                      <div className={`w-full max-w-[64px] rounded-t-md ${item.color}`} style={{ height: `${item.height}%` }} />
-                      <span className="text-[10px] text-muted-foreground text-center">{item.name}</span>
+              <div className="relative mt-8 flex flex-1 w-full pl-4">
+                <span className="absolute -left-2 top-1/2 -ml-3 -translate-y-1/2 -rotate-90 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Count
+                </span>
+
+                <div className="flex w-full h-[220px] gap-3">
+                  <div className="flex h-[200px] w-8 flex-col justify-between text-right text-[10px] text-muted-foreground">
+                    <span>{speciesCountStats.length > 0 ? speciesCountStats[0].maxCount : 100}</span>
+                    <span>{speciesCountStats.length > 0 ? Math.round(speciesCountStats[0].maxCount * 0.75) : 75}</span>
+                    <span>{speciesCountStats.length > 0 ? Math.round(speciesCountStats[0].maxCount * 0.5) : 50}</span>
+                    <span>{speciesCountStats.length > 0 ? Math.round(speciesCountStats[0].maxCount * 0.25) : 25}</span>
+                    <span>0</span>
+                  </div>
+
+                  <div className="flex flex-1 flex-col w-full h-full">
+                    <div className="flex h-[200px] w-full items-end justify-between gap-4 border-b border-l border-emerald-900/40 px-4">
+                      {speciesCountStats.length > 0 ? (
+                        speciesCountStats.map((item) => (
+                          <div key={item.name} className="group relative flex h-full flex-1 flex-col items-center justify-end">
+                            <HoverCard openDelay={160}>
+                              <HoverCardTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="w-full max-w-[64px] cursor-pointer appearance-none rounded-t-sm border-0 bg-transparent p-0 opacity-90 transition-all group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                  style={{ height: `${item.height}%`, backgroundColor: item.color }}
+                                  aria-label={`Show details for ${item.name}`}
+                                />
+                              </HoverCardTrigger>
+                              <HoverCardContent side="top" align="center" className="w-52 border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground">
+                                <p className="text-sm font-semibold">{item.name}</p>
+                                <div className="mt-2 space-y-1 text-xs">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-muted-foreground">Count</span>
+                                    <span className="font-medium">{item.count}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-muted-foreground">Taxonomy</span>
+                                    <span className="max-w-[110px] truncate text-right font-medium" title={item.taxonomyCategory}>{item.taxonomyCategory}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-muted-foreground">Avg confidence</span>
+                                    <span className="font-medium">{item.avgConfidencePercent.toFixed(1)}%</span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-muted-foreground">Map</span>
+                                    <span className="max-w-[110px] truncate text-right font-medium" title={item.mapLabel}>{item.mapLabel}</span>
+                                  </div>
+                                </div>
+                              </HoverCardContent>
+                            </HoverCard>
+                            <div className="absolute -bottom-6 w-full text-center">
+                              <span 
+                                className="block truncate px-1 text-[10px] text-muted-foreground" 
+                                title={item.name}
+                              >
+                                {item.name}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+                          No species data available
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    <div className="mt-8 text-center text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Species
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-                <span className="-rotate-90 origin-left translate-y-6">Count</span>
-                <span>Category</span>
               </div>
             </section>
           </div>
