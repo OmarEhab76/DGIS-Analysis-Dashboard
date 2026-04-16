@@ -146,6 +146,108 @@ describe('StatisticsDashboard export behavior', () => {
     expect(screen.getByRole('button', { name: /export report/i })).toBeDisabled();
   });
 
+  it('keeps confidence histogram bins visible when no detections are returned', () => {
+    render(<StatisticsDashboard />);
+
+    expect(screen.getByText('0.0%')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /show confidence details for/i })).toHaveLength(11);
+  });
+
+  it('renders confidence histogram from live detections and shows bin details on hover', async () => {
+    const detections = [
+      {
+        id: 1,
+        name: 'Hickory',
+        timestamp: '2026-01-01T00:00:00.000Z',
+        x: 10,
+        y: 20,
+        z: 30,
+        confidence: 52,
+        droneId: 2,
+        percentX: 50,
+        percentY: 50,
+      },
+      {
+        id: 2,
+        name: 'Hickory',
+        timestamp: '2026-01-01T01:00:00.000Z',
+        x: 12,
+        y: 22,
+        z: 34,
+        confidence: 57,
+        droneId: 2,
+        percentX: 52,
+        percentY: 48,
+      },
+      {
+        id: 3,
+        name: 'Maple',
+        timestamp: '2026-01-01T02:00:00.000Z',
+        x: 14,
+        y: 24,
+        z: 36,
+        confidence: 92,
+        droneId: 2,
+        percentX: 54,
+        percentY: 46,
+      },
+      {
+        id: 4,
+        name: 'Maple',
+        timestamp: '2026-01-01T03:00:00.000Z',
+        x: 16,
+        y: 26,
+        z: 38,
+        confidence: 94,
+        droneId: 2,
+        percentX: 56,
+        percentY: 44,
+      },
+      {
+        id: 5,
+        name: 'Maple',
+        timestamp: '2026-01-01T04:00:00.000Z',
+        x: 18,
+        y: 28,
+        z: 40,
+        confidence: 100,
+        droneId: 2,
+        percentX: 58,
+        percentY: 42,
+      },
+    ];
+
+    vi.mocked(useQuery).mockImplementation(
+      ((options: { queryKey: unknown[] }) => {
+        const scope = String(options.queryKey[0]);
+
+        if (scope === 'dashboard-labels') {
+          return LABELS_QUERY_RESULT;
+        }
+
+        return {
+          ...DETECTIONS_QUERY_RESULT,
+          data: detections,
+        };
+      }) as never
+    );
+
+    render(<StatisticsDashboard />);
+
+    expect(screen.getByText('79.0%')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /show confidence details for/i })).toHaveLength(11);
+
+    fireEvent.pointerEnter(screen.getByRole('button', { name: /show confidence details for 90-94% bin/i }));
+
+    expect(await screen.findByText('90-94%')).toBeInTheDocument();
+    expect(screen.getByText('Detections')).toBeInTheDocument();
+    expect(screen.getByText('93.0%')).toBeInTheDocument();
+    expect(screen.getByText('Map')).toBeInTheDocument();
+    expect(screen.getByText('Temperate Forest')).toBeInTheDocument();
+    expect(screen.getByText('Category')).toBeInTheDocument();
+    expect(screen.getByText('Flora')).toBeInTheDocument();
+  });
+
   it('shows species hover details with count, avg confidence, and map label', async () => {
     const detections = [
       {

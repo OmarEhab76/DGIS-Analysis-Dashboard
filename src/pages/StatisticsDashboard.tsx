@@ -12,18 +12,27 @@ import { getDetections, getLabels, getStats } from '@/lib/dashboardApi';
 import { getLabelColorValue } from '@/lib/labelColors';
 import { BiomeId, DashboardTab, Filters } from '@/types/dashboard';
 
-const confidenceBars = [
-  { label: '50%', value: 5 },
-  { label: '55%', value: 7 },
-  { label: '60%', value: 9 },
-  { label: '65%', value: 11 },
-  { label: '70%', value: 14 },
-  { label: '75%', value: 20 },
-  { label: '80%', value: 28 },
-  { label: '85%', value: 42 },
-  { label: '90%', value: 82 },
-  { label: '95%', value: 66 },
-  { label: '100%', value: 48 },
+const CONFIDENCE_BIN_START = 50;
+const CONFIDENCE_BIN_END = 100;
+const CONFIDENCE_BIN_STEP = 5;
+
+const confidenceBinStarts = Array.from(
+  { length: ((CONFIDENCE_BIN_END - CONFIDENCE_BIN_START) / CONFIDENCE_BIN_STEP) + 1 },
+  (_, index) => CONFIDENCE_BIN_START + (index * CONFIDENCE_BIN_STEP)
+);
+
+const confidenceBinColors = [
+  'bg-[rgb(2,44,34)]',
+  'bg-[rgb(4,60,46)]',
+  'bg-[rgb(6,78,59)]',
+  'bg-[rgb(6,95,70)]',
+  'bg-[rgb(5,120,87)]',
+  'bg-[rgb(4,143,105)]',
+  'bg-[rgb(6,173,124)]',
+  'bg-[rgb(16,185,129)]',
+  'bg-[rgb(52,211,153)]',
+  'bg-[rgb(110,231,183)]',
+  'bg-[rgb(167,243,208)]',
 ];
 
 const taxonomyMap: Record<string, string> = {
@@ -296,6 +305,72 @@ const StatisticsDashboard = () => {
     }));
   }, [activeBiome.label, detectionsQuery.data]);
 
+  const confidenceHistogramStats = useMemo(() => {
+    const detections = detectionsQuery.data ?? [];
+    const binMap = new Map<number, { count: number; confidenceSum: number }>();
+
+    confidenceBinStarts.forEach((binStart) => {
+      binMap.set(binStart, { count: 0, confidenceSum: 0 });
+    });
+
+    detections.forEach((detection) => {
+      const clampedConfidence = Math.max(
+        CONFIDENCE_BIN_START,
+        Math.min(CONFIDENCE_BIN_END, detection.confidence)
+      );
+      const binStart =
+        clampedConfidence === CONFIDENCE_BIN_END
+          ? CONFIDENCE_BIN_END
+          : Math.floor(clampedConfidence / CONFIDENCE_BIN_STEP) * CONFIDENCE_BIN_STEP;
+
+      const summary = binMap.get(binStart);
+      if (!summary) {
+        return;
+      }
+
+      summary.count += 1;
+      summary.confidenceSum += detection.confidence;
+    });
+
+    const bins = confidenceBinStarts.map((binStart, index) => {
+      const summary = binMap.get(binStart) ?? { count: 0, confidenceSum: 0 };
+      const avgConfidence = summary.count > 0 ? summary.confidenceSum / summary.count : 0;
+      const rangeLabel =
+        binStart === CONFIDENCE_BIN_END
+          ? `${CONFIDENCE_BIN_END}%`
+          : `${binStart}-${binStart + (CONFIDENCE_BIN_STEP - 1)}%`;
+
+      return {
+        label: `${binStart}%`,
+        rangeLabel,
+        count: summary.count,
+        avgConfidence,
+        colorClass: confidenceBinColors[index],
+      };
+    });
+
+    const maxCount = bins.reduce((maximum, bin) => Math.max(maximum, bin.count), 0);
+    const totalConfidenceSum = detections.reduce((sum, detection) => sum + detection.confidence, 0);
+    const overallAvgConfidence = detections.length > 0 ? totalConfidenceSum / detections.length : 0;
+
+    return {
+      bins: bins.map((bin) => {
+        if (maxCount === 0) {
+          return { ...bin, height: 4 };
+        }
+
+        const scaledHeight = Math.round((bin.count / maxCount) * 100);
+        return {
+          ...bin,
+          height: bin.count === 0 ? 4 : Math.max(scaledHeight, 8),
+        };
+      }),
+      overallAvgConfidence,
+    };
+  }, [detectionsQuery.data]);
+
+  const confidenceCategoryLabel = activeTab === 'flora' ? 'Flora' : 'Fauna';
+
   const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
   const isExportDisabled = labelsQuery.isLoading || detectionsQuery.isLoading;
 
@@ -516,25 +591,58 @@ const StatisticsDashboard = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Avg. Conf.</p>
-                  <p className="text-lg font-semibold text-primary">78.4%</p>
+                  <p className="text-lg font-semibold text-primary">
+                    {detectionsQuery.isLoading ? '--' : `${confidenceHistogramStats.overallAvgConfidence.toFixed(1)}%`}
+                  </p>
                 </div>
               </div>
 
               <div className="mt-8">
-                <div className="flex h-40 items-end gap-1">
-                  {confidenceBars.map((bar) => (
-                    <div key={bar.label} className="flex-1">
-                      <div
-                        className={`w-full rounded-t ${bar.value >= 90 ? 'bg-emerald-400' : bar.value >= 80 ? 'bg-emerald-600' : 'bg-emerald-900/60'}`}
-                        style={{ height: `${bar.value}%` }}
-                      />
+                <div className="flex h-40 items-end gap-1.5">
+                  {confidenceHistogramStats.bins.map((bin) => (
+                    <div key={bin.label} className="flex flex-1">
+                      <HoverCard openDelay={120}>
+                        <HoverCardTrigger asChild>
+                          <button
+                            type="button"
+                            className={`w-full rounded-t-sm border border-emerald-950/40 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${bin.colorClass} ${bin.count > 0 ? 'opacity-95 hover:opacity-100' : 'opacity-30'}`}
+                            style={{ height: `${bin.height}%` }}
+                            aria-label={`Show confidence details for ${bin.rangeLabel} bin`}
+                          />
+                        </HoverCardTrigger>
+                        <HoverCardContent side="top" align="center" className="w-56 border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground">
+                          <p className="text-sm font-semibold">Confidence Bin</p>
+                          <div className="mt-2 space-y-1 text-xs">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-muted-foreground">Range</span>
+                              <span className="font-medium">{bin.rangeLabel}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-muted-foreground">Detections</span>
+                              <span className="font-medium">{bin.count}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-muted-foreground">Avg confidence</span>
+                              <span className="font-medium">{bin.avgConfidence.toFixed(1)}%</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-muted-foreground">Map</span>
+                              <span className="max-w-[110px] truncate text-right font-medium" title={activeBiome.label}>{activeBiome.label}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-muted-foreground">Category</span>
+                              <span className="font-medium">{confidenceCategoryLabel}</span>
+                            </div>
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
                     </div>
                   ))}
                 </div>
                 <div className="mt-2 grid grid-cols-11 text-[10px] text-muted-foreground">
-                  {confidenceBars.map((bar) => (
-                    <span key={bar.label} className="text-center">
-                      {bar.label}
+                  {confidenceHistogramStats.bins.map((bin) => (
+                    <span key={bin.label} className="text-center">
+                      {bin.label}
                     </span>
                   ))}
                 </div>
