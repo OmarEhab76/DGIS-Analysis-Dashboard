@@ -2,10 +2,9 @@ import { Trees, Bug } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, ScatterChart, Scatter, ZAxis, CartesianGrid, Legend } from 'recharts';
 import Navbar from '@/components/dashboard/Navbar';
 import Sidebar from '@/components/dashboard/Sidebar';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { toast } from '@/components/ui/sonner';
 import { BIOME_NO_DATA_STATS, BIOME_OPTIONS, getBiomeLabels } from '@/data/mockData';
 import { buildDetectionsCsv, buildExportFilename, downloadCsvFile } from '@/lib/csvExport';
@@ -76,7 +75,59 @@ const taxonomyMap: Record<string, string> = {
   'Salvia Plant': 'Flowering/Medicinal Plants',
 };
 
-const CustomPieTooltip = ({ active, payload }: any) => {
+interface MorphologySpeciesDimension {
+  averageHeight: number;
+  averageWidth: number;
+}
+
+interface MorphologyBubbleDatum {
+  id: string;
+  name: string;
+  averageHeight: number;
+  averageWidth: number;
+  count: number;
+  bubbleSize: number;
+  fill: string;
+  stroke: string;
+}
+
+interface BaseTooltipProps<T> {
+  active?: boolean;
+  payload?: Array<{
+    payload: T;
+  }>;
+}
+
+const MORPHOLOGY_SPECIES_DIMENSIONS: Record<string, MorphologySpeciesDimension> = {
+  'Birch Tree': {
+    averageHeight: 22.5,
+    averageWidth: 7.5,
+  },
+  'Conifer': {
+    averageHeight: 40,
+    averageWidth: 10,
+  },
+  'Date Palm': {
+    averageHeight: 20,
+    averageWidth: 6,
+  },
+  'Maple': {
+    averageHeight: 27.5,
+    averageWidth: 15,
+  },
+  'Hickory': {
+    averageHeight: 30,
+    averageWidth: 15,
+  },
+  'Desert Willow': {
+    averageHeight: 7.5,
+    averageWidth: 4.5,
+  },
+};
+
+
+
+const CustomPieTooltip = ({ active, payload }: BaseTooltipProps<{ name: string; value: number; percent: number }>) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -98,7 +149,7 @@ const CustomPieTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const CustomBarTooltip = ({ active, payload }: any) => {
+const CustomBarTooltip = ({ active, payload }: BaseTooltipProps<{ name: string; count: number; taxonomyCategory: string; avgConfidencePercent: number; mapLabel: string }>) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -128,7 +179,12 @@ const CustomBarTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-const CustomHistogramTooltip = ({ active, payload, activeBiomeLabel, categoryLabel }: any) => {
+const CustomHistogramTooltip = ({
+  active,
+  payload,
+  activeBiomeLabel,
+  categoryLabel,
+}: BaseTooltipProps<{ rangeLabel: string; count: number; avgConfidence: number }> & { activeBiomeLabel: string; categoryLabel: string }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -154,6 +210,36 @@ const CustomHistogramTooltip = ({ active, payload, activeBiomeLabel, categoryLab
           <div className="flex items-center justify-between gap-2">
             <span className="text-muted-foreground">Category</span>
             <span className="font-medium">{categoryLabel}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomMorphologyTooltip = ({ active, payload, activeBiomeLabel }: BaseTooltipProps<MorphologyBubbleDatum> & { activeBiomeLabel: string }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload as MorphologyBubbleDatum;
+    return (
+      <div className="w-64 border border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground rounded shadow-lg shadow-black/50 outline-none z-50">
+        <p className="text-sm font-semibold">{data.name}</p>
+        <div className="mt-2 space-y-1 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Trees on map</span>
+            <span className="font-medium">{data.count}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Avg height</span>
+            <span className="font-medium">{data.averageHeight.toFixed(1)} m</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Avg width</span>
+            <span className="font-medium">{data.averageWidth.toFixed(1)} m</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Map</span>
+            <span className="max-w-[120px] truncate text-right font-medium" title={activeBiomeLabel}>{activeBiomeLabel}</span>
           </div>
         </div>
       </div>
@@ -247,8 +333,8 @@ const StatisticsDashboard = () => {
     
     const totalIndividuals = detectionsQuery.data.length;
     
-    const shannonIndex = Object.values(counts).reduce<number>((index: number, count: any) => {
-      const pi = (count as number) / totalIndividuals;
+    const shannonIndex = (Object.values(counts) as number[]).reduce<number>((index: number, count) => {
+      const pi = count / totalIndividuals;
       return index - (pi * Math.log(pi));
     }, 0);
     
@@ -453,6 +539,39 @@ const StatisticsDashboard = () => {
   }, [detectionsQuery.data]);
 
   const confidenceCategoryLabel = activeTab === 'flora' ? 'Flora' : 'Fauna';
+
+  const morphologyBubbleData = useMemo<MorphologyBubbleDatum[]>(() => {
+    const detections = detectionsQuery.data ?? [];
+    const counts: Record<string, number> = {};
+    const labelScope = labelsQuery.data ? labelsQuery.data.map(l => l.name) : Object.keys(MORPHOLOGY_SPECIES_DIMENSIONS);
+
+    detections.forEach((detection) => {
+      const speciesName = detection.name;
+      if (MORPHOLOGY_SPECIES_DIMENSIONS[speciesName]) {
+        counts[speciesName] = (counts[speciesName] || 0) + 1;
+      }
+    });
+
+    const entries = Object.entries(MORPHOLOGY_SPECIES_DIMENSIONS)
+      .map(([speciesName, dimensions]) => {
+        const count = counts[speciesName] || 0;
+        const color = getLabelColorValue(speciesName, labelScope);
+
+        return {
+          id: speciesName.toLowerCase().replace(/\s+/g, '-'),
+          name: speciesName,
+          averageHeight: dimensions.averageHeight,
+          averageWidth: dimensions.averageWidth,
+          count,
+          bubbleSize: count,
+          fill: color.replace(')', ' / 0.8)').replace('hsl', 'hsl'),
+          stroke: color,
+        };
+      })
+      .filter((entry) => entry.count > 0);
+
+    return entries;
+  }, [detectionsQuery.data, labelsQuery.data]);
 
   const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
   const isExportDisabled = labelsQuery.isLoading || detectionsQuery.isLoading;
@@ -660,37 +779,74 @@ const StatisticsDashboard = () => {
 
             <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5 min-h-[310px]">
               <h3 className="text-2xl font-semibold leading-none">Tree Morphology Plot</h3>
-              <p className="text-sm text-muted-foreground">Dimensional clustering based on height and width</p>
+              <p className="text-sm text-muted-foreground">Average dimensions vs. number of trees on the selected map</p>
 
-              <div className="relative mt-5 h-[250px] rounded-2xl border border-emerald-900/30 bg-[#041b13]">
-                <span className="absolute left-4 top-4 rounded bg-rose-500/20 px-2 py-1 text-[10px] font-semibold text-rose-300">TALL/THIN</span>
-                <span className="absolute right-4 top-4 rounded bg-emerald-500/20 px-2 py-1 text-[10px] font-semibold text-emerald-300">GIANTS</span>
-                <span className="absolute left-4 bottom-4 rounded bg-amber-300/20 px-2 py-1 text-[10px] font-semibold text-amber-200">SMALL/DELICATE</span>
-                <span className="absolute right-4 bottom-4 rounded bg-slate-300/10 px-2 py-1 text-[10px] font-semibold text-slate-300">SHORT/SPRAWLING</span>
-
-                <div className="absolute inset-x-8 bottom-8 border-t border-emerald-900/30" />
-                <div className="absolute bottom-8 left-8 top-8 border-l border-emerald-900/30" />
-
-                <span className="absolute -left-6 top-1/2 -rotate-90 text-[10px] uppercase tracking-wider text-muted-foreground">Height (m)</span>
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-muted-foreground">Width (m)</span>
-
-                <span className="absolute left-[11%] top-[22%] h-3.5 w-3.5 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(251,113,133,0.8)]" />
-                <span className="absolute left-[16%] top-[30%] h-2 w-2 rounded-full bg-rose-400/80 shadow-[0_0_8px_rgba(251,113,133,0.7)]" />
-                <span className="absolute left-[22%] top-[20%] h-2.5 w-2.5 rounded-full bg-rose-300 shadow-[0_0_10px_rgba(251,113,133,0.8)]" />
-
-                <span className="absolute left-[12%] top-[78%] h-2.5 w-2.5 rounded-full bg-amber-200 shadow-[0_0_10px_rgba(253,230,138,0.8)]" />
-                <span className="absolute left-[21%] top-[70%] h-1.5 w-1.5 rounded-full bg-amber-200/70 shadow-[0_0_8px_rgba(253,230,138,0.6)]" />
-
-                <span className="absolute left-[77%] top-[22%] h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(74,222,128,0.8)]" />
-                <span className="absolute left-[81%] top-[25%] h-4 w-4 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(34,197,94,0.9)]" />
-                <span className="absolute left-[85%] top-[19%] h-3.5 w-3.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)]" />
-
-                <span className="absolute left-[73%] top-[65%] h-2.5 w-2.5 rounded-full bg-slate-200 shadow-[0_0_10px_rgba(226,232,240,0.7)]" />
-                <span className="absolute left-[79%] top-[70%] h-3 w-3 rounded-full bg-slate-100 shadow-[0_0_10px_rgba(248,250,252,0.8)]" />
-              </div>
+              {activeTab === 'flora' ? (
+                <>
+                  <div className="mt-4 h-[350px] rounded-2xl border border-emerald-900/30 bg-[#041b13] p-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ScatterChart margin={{ top: 0, right: 0, bottom: 10, left: 0 }}>
+                        <CartesianGrid strokeDasharray="4 4" stroke="rgba(16,185,129,0.16)" />
+                        <XAxis
+                          type="number"
+                          dataKey="averageWidth"
+                          name="Width"
+                          domain={[0, 25]}
+                          tick={{ fill: '#94a3b8', fontSize: 10 }}
+                          tickLine={false}
+                          axisLine={{ stroke: 'rgba(6, 78, 59, 0.4)' }}
+                          label={{ value: 'Width (m)', position: 'insideBottom', offset: -10, fill: '#94a3b8', fontSize: 10 }}
+                        />
+                        <YAxis
+                          type="number"
+                          dataKey="averageHeight"
+                          name="Height"
+                          domain={[0, 50]}
+                          tick={{ fill: '#94a3b8', fontSize: 10 }}
+                          tickLine={false}
+                          axisLine={{ stroke: 'rgba(6, 78, 59, 0.4)' }}
+                          label={{ value: 'Height (m)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10 }}
+                        />
+                        <ZAxis type="number" dataKey="bubbleSize" range={[320, 1500]} />
+                        <RechartsTooltip
+                          content={<CustomMorphologyTooltip activeBiomeLabel={activeBiome.label} />}
+                          cursor={{ stroke: 'rgba(16, 185, 129, 0.35)', strokeDasharray: '4 4' }}
+                          wrapperStyle={{ zIndex: 100 }}
+                        />
+                        <Legend
+                          verticalAlign="top"
+                          align="right"
+                          wrapperStyle={{ fontSize: '11px', paddingBottom: '10px' }}
+                          iconType="circle"
+                        />
+                        {morphologyBubbleData.map((entry, index) => (
+                          <Scatter
+                            key={`morphology-scatter-${entry.id}`}
+                            name={entry.name}
+                            data={[entry]}
+                            fill={entry.fill}
+                            isAnimationActive={false}
+                          >
+                            <Cell
+                              fill={entry.fill}
+                              stroke={entry.stroke}
+                              strokeWidth={2}
+                              fillOpacity={0.88}
+                            />
+                          </Scatter>
+                        ))}
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+                </>
+              ) : (
+                <div className="mt-5 flex h-[250px] items-center justify-center rounded-2xl border border-emerald-900/30 bg-[#041b13] px-6 text-center">
+                  <p className="text-sm text-muted-foreground">Morphology plot is available on flora data only.</p>
+                </div>
+              )}
             </section>
 
-            <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5 min-h-[280px]">
+            <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5 min-h-[310px]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-2xl font-semibold leading-none">Confidence Score Distribution</h3>
@@ -704,11 +860,11 @@ const StatisticsDashboard = () => {
                 </div>
               </div>
 
-              <div className="mt-8 relative h-[180px] w-full">
+              <div className="mt-8 relative h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={confidenceHistogramStats.bins}
-                    margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                     barCategoryGap={6}
                   >
                     <XAxis 

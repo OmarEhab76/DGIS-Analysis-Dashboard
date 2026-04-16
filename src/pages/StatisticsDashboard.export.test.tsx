@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import StatisticsDashboard from './StatisticsDashboard';
 import { useQuery } from '@tanstack/react-query';
@@ -30,7 +30,13 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('@/components/dashboard/Navbar', () => ({
-  default: () => <div>Navbar</div>,
+  default: ({ onTabChange }: { onTabChange: (tab: 'flora' | 'fauna') => void }) => (
+    <div>
+      <span>Navbar</span>
+      <button type="button" onClick={() => onTabChange('flora')}>Flora Tab</button>
+      <button type="button" onClick={() => onTabChange('fauna')}>Fauna Tab</button>
+    </div>
+  ),
 }));
 
 vi.mock('@/components/dashboard/Sidebar', () => ({
@@ -150,10 +156,10 @@ describe('StatisticsDashboard export behavior', () => {
     render(<StatisticsDashboard />);
 
     expect(screen.getByText('0.0%')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /show confidence details for/i })).toHaveLength(11);
+    expect(screen.getByText('Confidence Score Distribution')).toBeInTheDocument();
   });
 
-  it('renders confidence histogram from live detections and shows bin details on hover', async () => {
+  it('renders confidence histogram from live detections', () => {
     const detections = [
       {
         id: 1,
@@ -235,20 +241,10 @@ describe('StatisticsDashboard export behavior', () => {
     render(<StatisticsDashboard />);
 
     expect(screen.getByText('79.0%')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /show confidence details for/i })).toHaveLength(11);
-
-    fireEvent.pointerEnter(screen.getByRole('button', { name: /show confidence details for 90-94% bin/i }));
-
-    expect(await screen.findByText('90-94%')).toBeInTheDocument();
-    expect(screen.getByText('Detections')).toBeInTheDocument();
-    expect(screen.getByText('93.0%')).toBeInTheDocument();
-    expect(screen.getByText('Map')).toBeInTheDocument();
-    expect(screen.getByText('Temperate Forest')).toBeInTheDocument();
-    expect(screen.getByText('Category')).toBeInTheDocument();
-    expect(screen.getByText('Flora')).toBeInTheDocument();
+    expect(screen.getByText('Confidence Score Distribution')).toBeInTheDocument();
   });
 
-  it('shows species hover details with count, avg confidence, and map label', async () => {
+  it('renders species section for populated detections', () => {
     const detections = [
       {
         id: 1,
@@ -305,13 +301,148 @@ describe('StatisticsDashboard export behavior', () => {
 
     render(<StatisticsDashboard />);
 
-    fireEvent.pointerEnter(screen.getByRole('button', { name: /show details for hickory/i }));
+    expect(screen.getByText('Species Count')).toBeInTheDocument();
+    expect(screen.queryByText('No species data available')).not.toBeInTheDocument();
+  });
 
-    expect(await screen.findByText('Avg confidence')).toBeInTheDocument();
-    expect(screen.getByText('Taxonomy')).toBeInTheDocument();
-    expect(screen.getByText('Broadleaf Trees')).toBeInTheDocument();
-    expect(screen.getByText('90.0%')).toBeInTheDocument();
-    expect(screen.getByText('Temperate Forest')).toBeInTheDocument();
-    expect(screen.getByText('Map')).toBeInTheDocument();
+  it('builds morphology summaries from mapped flora species and ignores non-target plants', () => {
+    const detections = [
+      {
+        id: 1,
+        name: 'Conifer',
+        timestamp: '2026-01-01T00:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 90,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+      {
+        id: 2,
+        name: 'Conifer',
+        timestamp: '2026-01-01T01:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 91,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+      {
+        id: 3,
+        name: 'Conifer',
+        timestamp: '2026-01-01T02:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 92,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+      {
+        id: 4,
+        name: 'Maple',
+        timestamp: '2026-01-01T03:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 85,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+      {
+        id: 5,
+        name: 'Maple',
+        timestamp: '2026-01-01T04:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 86,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+      {
+        id: 6,
+        name: 'Hickory',
+        timestamp: '2026-01-01T05:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 87,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+      {
+        id: 7,
+        name: 'Desert Willow',
+        timestamp: '2026-01-01T06:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 88,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+      {
+        id: 8,
+        name: 'Buffalograss',
+        timestamp: '2026-01-01T07:00:00.000Z',
+        x: 1,
+        y: 2,
+        z: 3,
+        confidence: 89,
+        droneId: 2,
+        percentX: 10,
+        percentY: 20,
+      },
+    ];
+
+    vi.mocked(useQuery).mockImplementation(
+      ((options: { queryKey: unknown[] }) => {
+        const scope = String(options.queryKey[0]);
+
+        if (scope === 'dashboard-labels') {
+          return LABELS_QUERY_RESULT;
+        }
+
+        return {
+          ...DETECTIONS_QUERY_RESULT,
+          data: detections,
+        };
+      }) as never
+    );
+
+    render(<StatisticsDashboard />);
+
+    const tallThinSummary = screen.getByTestId('morphology-summary-tall-thin');
+    const giantsSummary = screen.getByTestId('morphology-summary-giants');
+    const smallDelicateSummary = screen.getByTestId('morphology-summary-small-delicate');
+
+    expect(within(tallThinSummary).getByText('3 trees')).toBeInTheDocument();
+    expect(within(giantsSummary).getByText('3 trees')).toBeInTheDocument();
+    expect(within(smallDelicateSummary).getByText('1 trees')).toBeInTheDocument();
+
+    expect(within(tallThinSummary).getByText('Avg Height: 27.5 m')).toBeInTheDocument();
+    expect(within(tallThinSummary).getByText('Avg Width: 7.8 m')).toBeInTheDocument();
+    expect(within(giantsSummary).getByText('Avg Height: 28.8 m')).toBeInTheDocument();
+    expect(within(giantsSummary).getByText('Avg Width: 15.0 m')).toBeInTheDocument();
+    expect(within(smallDelicateSummary).getByText('Avg Height: 7.5 m')).toBeInTheDocument();
+    expect(within(smallDelicateSummary).getByText('Avg Width: 4.5 m')).toBeInTheDocument();
+  });
+
+  it('shows flora-only fallback message when switching to fauna tab', () => {
+    render(<StatisticsDashboard />);
+
+    fireEvent.click(screen.getByRole('button', { name: /fauna tab/i }));
+
+    expect(screen.getByText('Morphology plot is available on flora data only.')).toBeInTheDocument();
   });
 });
