@@ -204,6 +204,35 @@ function buildNumericDomain(values: number[], fallback: [number, number]): [numb
   return [Math.max(0, minValue - padding), maxValue + padding];
 }
 
+function chooseTickStep(maxValue: number): number {
+  if (maxValue <= 20) {
+    return 5;
+  }
+
+  if (maxValue <= 100) {
+    return 10;
+  }
+
+  if (maxValue <= 500) {
+    return 50;
+  }
+
+  return 500;
+}
+
+function buildFixedTicks(domain: [number, number]): number[] {
+  const upperBound = Math.max(0, domain[1]);
+  const step = chooseTickStep(upperBound);
+  const maxTick = Math.ceil(upperBound / step) * step;
+  const ticks: number[] = [];
+
+  for (let tick = 0; tick <= maxTick; tick += step) {
+    ticks.push(tick);
+  }
+
+  return ticks;
+}
+
 
 
 const CustomPieTooltip = ({ active, payload }: BaseTooltipProps<{ name: string; value: number; percent: number }>) => {
@@ -413,10 +442,18 @@ const StatisticsDashboard = () => {
     queryFn: () => (hasLiveDatabaseData ? getStats(selectedBiome) : Promise.resolve(BIOME_NO_DATA_STATS)),
   });
 
-  const treeDensity = useMemo(() => {
-    if (!statsQuery.data || !statsQuery.data.areaScanned) return 0;
+  const densityValue = useMemo(() => {
+    if (!statsQuery.data || !statsQuery.data.areaScanned) {
+      return 0;
+    }
+
+    if (activeTab === 'fauna') {
+      const totalAnimals = detectionsQuery.data?.length ?? 0;
+      return Math.round(totalAnimals / statsQuery.data.areaScanned);
+    }
+
     return Math.round(statsQuery.data.totalTrees / statsQuery.data.areaScanned);
-  }, [statsQuery.data]);
+  }, [activeTab, detectionsQuery.data, statsQuery.data]);
 
   const biodiversityIndex = useMemo(() => {
     if (!detectionsQuery.data || detectionsQuery.data.length === 0) return "0.00";
@@ -700,29 +737,41 @@ const StatisticsDashboard = () => {
 
   const morphologyChartConfig = useMemo(() => {
     if (activeTab === 'fauna') {
+      const xDomain = buildNumericDomain(
+        morphologyBubbleData.map((entry) => entry.xValue),
+        [0, 100]
+      );
+      const yDomain = buildNumericDomain(
+        morphologyBubbleData.map((entry) => entry.yValue),
+        [0, 200]
+      );
+      const xTicks = buildFixedTicks(xDomain);
+      const yTicks = buildFixedTicks(yDomain);
+
       return {
         title: 'Fauna Morphology Plot',
         subtitle: 'Average weight vs. length/height and number of animals on the selected map',
         xLabel: 'Weight (kg)',
         yLabel: 'Length / Height (cm)',
-        xDomain: buildNumericDomain(
-          morphologyBubbleData.map((entry) => entry.xValue),
-          [0, 100]
-        ),
-        yDomain: buildNumericDomain(
-          morphologyBubbleData.map((entry) => entry.yValue),
-          [0, 200]
-        ),
+        xDomain: [0, xTicks[xTicks.length - 1] ?? 100] as [number, number],
+        yDomain: [0, yTicks[yTicks.length - 1] ?? 200] as [number, number],
+        xTicks,
+        yTicks,
       };
     }
+
+    const xTicks = buildFixedTicks([0, 25]);
+    const yTicks = buildFixedTicks([0, 50]);
 
     return {
       title: 'Tree Morphology Plot',
       subtitle: 'Average dimensions vs. number of trees on the selected map',
       xLabel: 'Width (m)',
       yLabel: 'Height (m)',
-      xDomain: [0, 25] as [number, number],
-      yDomain: [0, 50] as [number, number],
+      xDomain: [0, xTicks[xTicks.length - 1] ?? 25] as [number, number],
+      yDomain: [0, yTicks[yTicks.length - 1] ?? 50] as [number, number],
+      xTicks,
+      yTicks,
     };
   }, [activeTab, morphologyBubbleData]);
 
@@ -774,14 +823,16 @@ const StatisticsDashboard = () => {
             </div>
           )}
           <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-4 lg:grid-cols-[1.05fr_1.3fr]">
-            <div className="space-y-4 min-w-0">
+            <div className="min-w-0 space-y-4 lg:flex lg:h-full lg:flex-col lg:space-y-0 lg:gap-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">Tree Density</p>
+                      <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+                        {activeTab === 'fauna' ? 'Animal Density' : 'Tree Density'}
+                      </p>
                       <p className="mt-2 text-4xl font-bold leading-none text-foreground">
-                        {statsQuery.isLoading ? '--' : treeDensity.toLocaleString()}
+                        {statsQuery.isLoading ? '--' : densityValue.toLocaleString()}
                       </p>
                     </div>
                     <div className="rounded-full bg-emerald-500/10 p-2 text-primary">
@@ -805,10 +856,10 @@ const StatisticsDashboard = () => {
                 </section>
               </div>
 
-              <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5">
+              <section className="rounded-3xl border border-emerald-900/40 bg-[#062519]/90 p-5 lg:flex lg:flex-1 lg:flex-col">
                 <h3 className="text-2xl font-semibold leading-none">{activeTab === 'fauna' ? 'Taxonomy Breakdown' : 'Flora Taxonomy Breakdown'}</h3>
                 <p className="text-sm text-muted-foreground">Major category distribution</p>
-                <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between lg:flex-1 lg:items-center">
                   <div className="space-y-3 text-sm min-w-[180px]">
                     {activeTab === 'fauna' ? (
                       <>
@@ -936,29 +987,32 @@ const StatisticsDashboard = () => {
 
               <div className="mt-4 h-[350px] rounded-2xl border border-emerald-900/30 bg-[#041b13] p-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart margin={{ top: 0, right: 0, bottom: 10, left: 0 }}>
+                  <ScatterChart margin={{ top: 0, right: 0, bottom: 28, left: 0 }}>
                     <CartesianGrid strokeDasharray="4 4" stroke="rgba(16,185,129,0.16)" />
                     <XAxis
                       type="number"
                       dataKey="xValue"
                       name={morphologyChartConfig.xLabel}
                       domain={morphologyChartConfig.xDomain}
+                      ticks={morphologyChartConfig.xTicks}
+                      height={48}
                       tick={{ fill: '#94a3b8', fontSize: 10 }}
                       tickLine={false}
                       axisLine={{ stroke: 'rgba(6, 78, 59, 0.4)' }}
-                      label={{ value: morphologyChartConfig.xLabel, position: 'insideBottom', offset: -10, fill: '#94a3b8', fontSize: 10 }}
+                      label={{ value: morphologyChartConfig.xLabel, position: 'bottom', offset: 8, fill: '#94a3b8', fontSize: 10 }}
                     />
                     <YAxis
                       type="number"
                       dataKey="yValue"
                       name={morphologyChartConfig.yLabel}
                       domain={morphologyChartConfig.yDomain}
+                      ticks={morphologyChartConfig.yTicks}
                       tick={{ fill: '#94a3b8', fontSize: 10 }}
                       tickLine={false}
                       axisLine={{ stroke: 'rgba(6, 78, 59, 0.4)' }}
                       label={{ value: morphologyChartConfig.yLabel, angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10 }}
                     />
-                    <ZAxis type="number" dataKey="bubbleSize" range={[320, 1500]} />
+                    <ZAxis type="number" dataKey="bubbleSize" range={[140, 760]} />
                     <RechartsTooltip
                       content={<CustomMorphologyTooltip activeBiomeLabel={activeBiome.label} />}
                       cursor={{ stroke: 'rgba(16, 185, 129, 0.35)', strokeDasharray: '4 4' }}
