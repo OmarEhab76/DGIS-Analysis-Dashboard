@@ -150,6 +150,8 @@ app.get('/api/detections', (req, res) => {
     return res.json({ detections: [] });
   }
 
+  const isBorealForest = biome === 'boreal-forest';
+
   const where = [];
   const params = [];
 
@@ -171,13 +173,15 @@ app.get('/api/detections', (req, res) => {
     params.push(dateTo);
   }
 
-  const bounds = db
-    .prepare(
-      `SELECT MIN(X) AS minX, MAX(X) AS maxX, MIN(Z) AS minZ, MAX(Z) AS maxZ
-       FROM Observations_new
-       WHERE Name IN (${activeLabels.map(() => '?').join(',')})`
-    )
-    .get(...activeLabels);
+  const bounds = isBorealForest
+    ? { minX: 0, maxX: 1000, minZ: 0, maxZ: 1000 }
+    : db
+        .prepare(
+          `SELECT MIN(X) AS minX, MAX(X) AS maxX, MIN(Z) AS minZ, MAX(Z) AS maxZ
+           FROM Observations_new
+           WHERE Name IN (${activeLabels.map(() => '?').join(',')})`
+        )
+        .get(...activeLabels);
 
   const rows = db
     .prepare(

@@ -1,13 +1,19 @@
-import { useState, useMemo } from 'react';
-import { DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { BiomeId, DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
 import { getLabelMarkerStyle, getLabelStyle } from '@/lib/labelColors';
 import { Plus, Minus, Locate } from 'lucide-react';
 import StatsCards from '@/components/dashboard/StatsCards';
+
+const BOREAL_MAP_WIDTH = 1280;
+const BOREAL_MAP_HEIGHT = 1280;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 4;
 
 interface MapViewProps {
   activeTab: DashboardTab;
   detections: Detection[];
   labels: DashboardLabel[];
+  selectedBiome: BiomeId;
   hasLiveData: boolean;
   biomeLabel: string;
   emptyDbFile?: string;
@@ -20,6 +26,7 @@ const MapView = ({
   activeTab,
   detections,
   labels,
+  selectedBiome,
   hasLiveData,
   biomeLabel,
   emptyDbFile,
@@ -27,8 +34,172 @@ const MapView = ({
   isLoadingStats = false,
   isLoading = false,
 }: MapViewProps) => {
+  const mapViewportRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{ active: boolean; startX: number; startY: number; startPanX: number; startPanY: number }>({
+    active: false,
+    startX: 0,
+    startY: 0,
+    startPanX: 0,
+    startPanY: 0,
+  });
   const [hoveredDetection, setHoveredDetection] = useState<Detection | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const isBorealForest = selectedBiome === 'boreal-forest';
+
+  const clampPan = useCallback((candidatePan: { x: number; y: number }, nextZoom: number, viewportWidth: number, viewportHeight: number) => {
+    const scaledWidth = BOREAL_MAP_WIDTH * nextZoom;
+    const scaledHeight = BOREAL_MAP_HEIGHT * nextZoom;
+
+    const minX = scaledWidth > viewportWidth ? viewportWidth - scaledWidth : (viewportWidth - scaledWidth) / 2;
+    const maxX = scaledWidth > viewportWidth ? 0 : (viewportWidth - scaledWidth) / 2;
+    const minY = scaledHeight > viewportHeight ? viewportHeight - scaledHeight : (viewportHeight - scaledHeight) / 2;
+    const maxY = scaledHeight > viewportHeight ? 0 : (viewportHeight - scaledHeight) / 2;
+
+    return {
+      x: Math.min(maxX, Math.max(minX, candidatePan.x)),
+      y: Math.min(maxY, Math.max(minY, candidatePan.y)),
+    };
+  }, []);
+
+  const centerBorealView = useCallback((nextZoom = 1) => {
+    const viewport = mapViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const centerPan = {
+      x: (viewport.clientWidth - BOREAL_MAP_WIDTH * nextZoom) / 2,
+      y: (viewport.clientHeight - BOREAL_MAP_HEIGHT * nextZoom) / 2,
+    };
+
+    setZoom(nextZoom);
+    setPan(clampPan(centerPan, nextZoom, viewport.clientWidth, viewport.clientHeight));
+  }, [clampPan]);
+
+  const zoomBorealTo = useCallback((nextZoomRaw: number, anchor?: { x: number; y: number }) => {
+    const viewport = mapViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoomRaw));
+    if (Math.abs(nextZoom - zoom) < 0.0001) {
+      return;
+    }
+
+    const anchorX = anchor?.x ?? viewport.clientWidth / 2;
+    const anchorY = anchor?.y ?? viewport.clientHeight / 2;
+    const mapX = (anchorX - pan.x) / zoom;
+    const mapY = (anchorY - pan.y) / zoom;
+
+    const nextPan = {
+      x: anchorX - mapX * nextZoom,
+      y: anchorY - mapY * nextZoom,
+    };
+
+    setZoom(nextZoom);
+    setPan(clampPan(nextPan, nextZoom, viewport.clientWidth, viewport.clientHeight));
+  }, [clampPan, pan.x, pan.y, zoom]);
+
+  useEffect(() => {
+    if (!isBorealForest) {
+      return;
+    }
+
+    centerBorealView(1);
+
+    const onResize = () => {
+      const viewport = mapViewportRef.current;
+      if (!viewport) {
+        return;
+      }
+
+      setPan((previousPan) =>
+        clampPan(previousPan, zoom, viewport.clientWidth, viewport.clientHeight)
+      );
+    };
+
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+    };
+  }, [centerBorealView, clampPan, isBorealForest, zoom]);
+
+  const handleBorealWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    if (!isBorealForest) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const viewport = mapViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const rect = viewport.getBoundingClientRect();
+    const anchor = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+    const factor = Math.exp(-event.deltaY * 0.0015);
+    zoomBorealTo(zoom * factor, anchor);
+  }, [isBorealForest, zoom, zoomBorealTo]);
+
+  const handleBorealPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isBorealForest) {
+      return;
+    }
+
+    const viewport = mapViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    viewport.setPointerCapture(event.pointerId);
+    dragStateRef.current = {
+      active: true,
+      startX: event.clientX,
+      startY: event.clientY,
+      startPanX: pan.x,
+      startPanY: pan.y,
+    };
+    setIsDragging(true);
+  }, [isBorealForest, pan.x, pan.y]);
+
+  const handleBorealPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isBorealForest || !dragStateRef.current.active) {
+      return;
+    }
+
+    const viewport = mapViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const nextPan = {
+      x: dragStateRef.current.startPanX + (event.clientX - dragStateRef.current.startX),
+      y: dragStateRef.current.startPanY + (event.clientY - dragStateRef.current.startY),
+    };
+
+    setPan(clampPan(nextPan, zoom, viewport.clientWidth, viewport.clientHeight));
+  }, [clampPan, isBorealForest, zoom]);
+
+  const handleBorealPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isBorealForest) {
+      return;
+    }
+
+    const viewport = mapViewportRef.current;
+    if (viewport?.hasPointerCapture(event.pointerId)) {
+      viewport.releasePointerCapture(event.pointerId);
+    }
+
+    dragStateRef.current.active = false;
+    setIsDragging(false);
+  }, [isBorealForest]);
 
   const labelScope = useMemo(() => {
     const fallback =
@@ -58,26 +229,104 @@ const MapView = ({
     [labels]
   );
 
+  const hoveredPopupStyle = useMemo(() => {
+    if (!hoveredDetection) {
+      return null;
+    }
+
+    if (!isBorealForest) {
+      const popupLeft = hoveredDetection.percentX > 60 ? hoveredDetection.percentX - 25 : hoveredDetection.percentX + 3;
+      const popupTop = hoveredDetection.percentY > 60 ? hoveredDetection.percentY - 35 : hoveredDetection.percentY + 3;
+      return { left: `${popupLeft}%`, top: `${popupTop}%` };
+    }
+
+    const viewport = mapViewportRef.current;
+    if (!viewport) {
+      return { left: '16px', top: '16px' };
+    }
+
+    const markerX = (hoveredDetection.percentX / 100) * BOREAL_MAP_WIDTH * zoom + pan.x;
+    const markerY = (hoveredDetection.percentY / 100) * BOREAL_MAP_HEIGHT * zoom + pan.y;
+    const popupWidth = 208;
+    const popupHeight = 220;
+
+    const desiredLeft = markerX + (markerX > viewport.clientWidth * 0.6 ? -popupWidth - 12 : 12);
+    const desiredTop = markerY + (markerY > viewport.clientHeight * 0.6 ? -popupHeight - 12 : 12);
+
+    const clampedLeft = Math.min(viewport.clientWidth - popupWidth - 8, Math.max(8, desiredLeft));
+    const clampedTop = Math.min(viewport.clientHeight - popupHeight - 8, Math.max(8, desiredTop));
+
+    return { left: `${clampedLeft}px`, top: `${clampedTop}px` };
+  }, [hoveredDetection, isBorealForest, pan.x, pan.y, zoom]);
+
   return (
     <div className="relative flex-1 rounded-xl overflow-hidden bg-[hsl(140,25%,15%)] border border-border">
-      {/* Map background pattern */}
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `
-            radial-gradient(ellipse at 20% 50%, hsl(100, 30%, 25%) 0%, transparent 50%),
-            radial-gradient(ellipse at 70% 30%, hsl(90, 25%, 20%) 0%, transparent 40%),
-            radial-gradient(ellipse at 50% 80%, hsl(110, 20%, 18%) 0%, transparent 45%),
-            radial-gradient(ellipse at 80% 70%, hsl(95, 30%, 22%) 0%, transparent 35%)
-          `,
-        }}
-      />
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234ade80' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}
-      />
+      {/* Map background */}
+      {isBorealForest ? (
+        <div
+          ref={mapViewportRef}
+          className={`absolute inset-0 overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          onWheel={handleBorealWheel}
+          onPointerDown={handleBorealPointerDown}
+          onPointerMove={handleBorealPointerMove}
+          onPointerUp={handleBorealPointerUp}
+          onPointerLeave={handleBorealPointerUp}
+        >
+          <div
+            className="absolute left-0 top-0"
+            style={{
+              width: `${BOREAL_MAP_WIDTH}px`,
+              height: `${BOREAL_MAP_HEIGHT}px`,
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: 'top left',
+            }}
+          >
+            <img
+              src="/maps/object_topdown.png"
+              alt="Boreal forest terrain map"
+              className="block"
+              style={{ width: `${BOREAL_MAP_WIDTH}px`, height: `${BOREAL_MAP_HEIGHT}px` }}
+              draggable={false}
+            />
+
+            {!isLoading &&
+              detections.map((d) => (
+                <div
+                  key={d.id}
+                  className="absolute w-3 h-3 rounded-full cursor-pointer transition-transform hover:scale-150"
+                  style={{
+                    left: `${d.percentX}%`,
+                    top: `${d.percentY}%`,
+                    transform: 'translate(-50%, -50%)',
+                    ...getLabelMarkerStyle(d.name, labelScope),
+                  }}
+                  onMouseEnter={() => setHoveredDetection(d)}
+                  onMouseLeave={() => setHoveredDetection(null)}
+                />
+              ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage: `
+                radial-gradient(ellipse at 20% 50%, hsl(100, 30%, 25%) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 30%, hsl(90, 25%, 20%) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 80%, hsl(110, 20%, 18%) 0%, transparent 45%),
+                radial-gradient(ellipse at 80% 70%, hsl(95, 30%, 22%) 0%, transparent 35%)
+              `,
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234ade80' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+          />
+        </>
+      )}
 
       {/* Stats cards overlaid on the map */}
       <div className="absolute top-4 left-4 right-4 z-20">
@@ -91,6 +340,7 @@ const MapView = ({
       </div>
 
       {/* Markers */}
+      {!isBorealForest && (
       <div className="absolute inset-0" style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}>
         {!isLoading &&
           detections.map((d) => (
@@ -108,6 +358,7 @@ const MapView = ({
             />
           ))}
       </div>
+      )}
 
       {isLoading && (
         <div className="absolute inset-0 grid place-items-center text-sm text-foreground bg-background/20">
@@ -136,13 +387,10 @@ const MapView = ({
       )}
 
       {/* Popup */}
-      {hoveredDetection && (() => {
-        const popupLeft = hoveredDetection.percentX > 60 ? hoveredDetection.percentX - 25 : hoveredDetection.percentX + 3;
-        const popupTop = hoveredDetection.percentY > 60 ? hoveredDetection.percentY - 35 : hoveredDetection.percentY + 3;
-        return (
+      {hoveredDetection && hoveredPopupStyle && (
           <div
             className="absolute z-20 w-52 bg-card/90 backdrop-blur-md rounded-xl border border-border p-3 shadow-lg pointer-events-none"
-            style={{ left: `${popupLeft}%`, top: `${popupTop}%` }}
+            style={hoveredPopupStyle}
           >
             <div className="w-full h-24 rounded-lg bg-secondary mb-2 flex items-center justify-center overflow-hidden">
               <span className="text-3xl">🌿</span>
@@ -168,8 +416,7 @@ const MapView = ({
               ))}
             </div>
           </div>
-        );
-      })()}
+      )}
 
       {/* Legend */}
       <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg border border-border px-3 py-2">
@@ -184,13 +431,43 @@ const MapView = ({
 
       {/* Zoom controls */}
       <div className="absolute bottom-4 right-4 flex flex-col gap-1">
-        <button onClick={() => setZoom((z) => Math.min(z + 0.2, 3))} className="w-8 h-8 rounded-lg bg-card/90 backdrop-blur-sm border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors">
+        <button
+          onClick={() => {
+            if (isBorealForest) {
+              zoomBorealTo(zoom + 0.2);
+              return;
+            }
+
+            setZoom((z) => Math.min(z + 0.2, 3));
+          }}
+          className="w-8 h-8 rounded-lg bg-card/90 backdrop-blur-sm border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors"
+        >
           <Plus className="w-4 h-4" />
         </button>
-        <button onClick={() => setZoom((z) => Math.max(z - 0.2, 0.5))} className="w-8 h-8 rounded-lg bg-card/90 backdrop-blur-sm border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors">
+        <button
+          onClick={() => {
+            if (isBorealForest) {
+              zoomBorealTo(zoom - 0.2);
+              return;
+            }
+
+            setZoom((z) => Math.max(z - 0.2, 0.5));
+          }}
+          className="w-8 h-8 rounded-lg bg-card/90 backdrop-blur-sm border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors"
+        >
           <Minus className="w-4 h-4" />
         </button>
-        <button onClick={() => setZoom(1)} className="w-8 h-8 rounded-lg bg-card/90 backdrop-blur-sm border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors">
+        <button
+          onClick={() => {
+            if (isBorealForest) {
+              centerBorealView(1);
+              return;
+            }
+
+            setZoom(1);
+          }}
+          className="w-8 h-8 rounded-lg bg-card/90 backdrop-blur-sm border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors"
+        >
           <Locate className="w-4 h-4" />
         </button>
       </div>

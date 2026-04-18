@@ -132,6 +132,7 @@ const Index = () => {
             activeTab={activeTab}
             detections={detectionsQuery.data || []}
             labels={labelsQuery.data || []}
+            selectedBiome={selectedBiome}
             isLoading={detectionsQuery.isLoading}
             hasLiveData={hasLiveDatabaseData}
             biomeLabel={activeBiome.label}
