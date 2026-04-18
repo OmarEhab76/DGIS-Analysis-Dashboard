@@ -12,12 +12,13 @@ import { getDetections, getLabels, getStats } from '@/lib/dashboardApi';
 import { getLabelColorValue } from '@/lib/labelColors';
 import { BiomeId, DashboardTab, Filters } from '@/types/dashboard';
 
-const CONFIDENCE_BIN_START = 50;
+const CONFIDENCE_BIN_START = 0;
 const CONFIDENCE_BIN_END = 100;
-const CONFIDENCE_BIN_STEP = 5;
+const CONFIDENCE_BIN_STEP = 10;
+const CONFIDENCE_BIN_LAST_START = CONFIDENCE_BIN_END - CONFIDENCE_BIN_STEP;
 
 const confidenceBinStarts = Array.from(
-  { length: ((CONFIDENCE_BIN_END - CONFIDENCE_BIN_START) / CONFIDENCE_BIN_STEP) + 1 },
+  { length: ((CONFIDENCE_BIN_LAST_START - CONFIDENCE_BIN_START) / CONFIDENCE_BIN_STEP) + 1 },
   (_, index) => CONFIDENCE_BIN_START + (index * CONFIDENCE_BIN_STEP)
 );
 
@@ -621,10 +622,11 @@ const StatisticsDashboard = () => {
         CONFIDENCE_BIN_START,
         Math.min(CONFIDENCE_BIN_END, detection.confidence)
       );
-      const binStart =
+      const normalizedConfidence =
         clampedConfidence === CONFIDENCE_BIN_END
-          ? CONFIDENCE_BIN_END
-          : Math.floor(clampedConfidence / CONFIDENCE_BIN_STEP) * CONFIDENCE_BIN_STEP;
+          ? CONFIDENCE_BIN_LAST_START
+          : clampedConfidence;
+      const binStart = Math.floor(normalizedConfidence / CONFIDENCE_BIN_STEP) * CONFIDENCE_BIN_STEP;
 
       const summary = binMap.get(binStart);
       if (!summary) {
@@ -639,12 +641,13 @@ const StatisticsDashboard = () => {
       const summary = binMap.get(binStart) ?? { count: 0, confidenceSum: 0 };
       const avgConfidence = summary.count > 0 ? summary.confidenceSum / summary.count : 0;
       const rangeLabel =
-        binStart === CONFIDENCE_BIN_END
-          ? `${CONFIDENCE_BIN_END}%`
+        binStart === CONFIDENCE_BIN_LAST_START
+          ? `${binStart}-${CONFIDENCE_BIN_END}%`
           : `${binStart}-${binStart + (CONFIDENCE_BIN_STEP - 1)}%`;
+      const axisLabel = rangeLabel.replace('%', '');
 
       return {
-        label: `${binStart}%`,
+        label: axisLabel,
         rangeLabel,
         count: summary.count,
         avgConfidence,
