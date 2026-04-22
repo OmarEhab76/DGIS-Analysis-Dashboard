@@ -206,7 +206,7 @@ Vitest + Testing Library is currently mapping essential pipelines:
 
 - **Add New Biomes:** Introduce new subsets natively referencing `BIOME_CONFIG`
   in the backend and `BIOME_OPTIONS` in `mockData.ts`. Connect appropriate
-  SQLite files holding targeted tables (`Observations_new`).
+  SQLite files holding targeted tables (`Observations`).
 - **Extend Live Computations:** Alter `api/stats` to process extended analytics
   passing fields natively into `DashboardStats` interface types updating density
   views within `StatisticsDashboard.tsx`.

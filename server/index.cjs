@@ -106,7 +106,7 @@ app.get('/api/labels', (req, res) => {
   const counts = db
     .prepare(
       `SELECT Name as name, COUNT(*) as count
-       FROM Observations_new
+       FROM Observations
        WHERE Name IN (${placeholders})
        GROUP BY Name`
     )
@@ -178,7 +178,7 @@ app.get('/api/detections', (req, res) => {
     : db
         .prepare(
           `SELECT MIN(X) AS minX, MAX(X) AS maxX, MIN(Z) AS minZ, MAX(Z) AS maxZ
-           FROM Observations_new
+           FROM Observations
            WHERE Name IN (${activeLabels.map(() => '?').join(',')})`
         )
         .get(...activeLabels);
@@ -194,7 +194,7 @@ app.get('/api/detections', (req, res) => {
          Z AS z,
          Confidence_Level AS confidence,
          Drone_ID AS droneId
-       FROM Observations_new
+       FROM Observations
        WHERE ${where.join(' AND ')}
        ORDER BY Timestamp DESC, ID DESC`
     )
@@ -239,11 +239,11 @@ app.get('/api/stats', (req, res) => {
   const floraLabels = getCategoryLabels(biome, 'flora');
 
   const totals = db
-    .prepare('SELECT COUNT(*) AS totalDetections FROM Observations_new')
+    .prepare('SELECT COUNT(*) AS totalDetections FROM Observations')
     .get();
 
   const treeCount = db
-    .prepare(`SELECT COUNT(*) AS totalTrees FROM Observations_new WHERE Name IN (${floraLabels.map(() => '?').join(',')})`)
+    .prepare(`SELECT COUNT(*) AS totalTrees FROM Observations WHERE Name IN (${floraLabels.map(() => '?').join(',')})`)
     .get(...floraLabels);
 
   return res.json({

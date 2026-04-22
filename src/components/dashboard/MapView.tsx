@@ -109,6 +109,12 @@ const MapView = ({
     }
 
     centerBorealView(1);
+  }, [centerBorealView, isBorealForest]);
+
+  useEffect(() => {
+    if (!isBorealForest) {
+      return;
+    }
 
     const onResize = () => {
       const viewport = mapViewportRef.current;
@@ -125,7 +131,7 @@ const MapView = ({
     return () => {
       window.removeEventListener('resize', onResize);
     };
-  }, [centerBorealView, clampPan, isBorealForest, zoom]);
+  }, [clampPan, isBorealForest, zoom]);
 
   const handleBorealWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
     if (!isBorealForest) {
