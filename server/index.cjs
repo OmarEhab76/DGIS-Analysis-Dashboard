@@ -22,6 +22,13 @@ const BIOME_CONFIG = {
       fauna: ['Beaver', 'Lynx', 'Marten', 'Squirrel', 'Warbler', 'Woodpecker'],
     },
   },
+  mountain: {
+    dbPath: path.resolve(process.cwd(), 'DGIS_Mountain.db'),
+    labels: {
+      flora: ['Conifer', 'Edelweiss', 'Heather', 'Rhododendron'],
+      fauna: ['Alpine Marmot', 'Elk', 'Golden Eagle', 'Grizzly Bear', 'Mountain Lion'],
+    },
+  },
 };
 
 const DEFAULT_BIOME = 'temperate-forest';

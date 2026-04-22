@@ -389,7 +389,12 @@ const StatisticsDashboard = () => {
     [selectedBiome]
   );
   const hasLiveDatabaseData = activeBiome.hasDatabaseData;
-  const expectedDbFile = selectedBiome === 'boreal-forest' ? 'DGIS_Boreal.db' : 'DGIS.db';
+  const expectedDbFile =
+    selectedBiome === 'boreal-forest'
+      ? 'DGIS_Boreal.db'
+      : selectedBiome === 'mountain'
+        ? 'DGIS_Mountain.db'
+        : 'DGIS.db';
 
   const labelsQuery = useQuery({
     queryKey: ['dashboard-labels', selectedBiome, activeTab],
