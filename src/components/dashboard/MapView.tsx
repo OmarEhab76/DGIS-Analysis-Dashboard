@@ -447,9 +447,9 @@ const MapView = ({
             </div>
             <div className="grid grid-cols-3 gap-1">
               {[
-                { label: 'X-AXIS', value: hoveredDetection.x.toFixed(4) },
-                { label: 'Y-AXIS', value: hoveredDetection.y.toFixed(4) },
-                { label: 'Z-AXIS', value: hoveredDetection.z.toFixed(1) },
+                { label: 'X-AXIS', value: hoveredDetection.x.toFixed(2) },
+                { label: 'Y-AXIS', value: hoveredDetection.y.toFixed(2) },
+                { label: 'Z-AXIS', value: hoveredDetection.z.toFixed(2) },
               ].map((a) => (
                 <div key={a.label} className="bg-secondary rounded-md p-1.5 text-center">
                   <p className="text-[8px] text-muted-foreground">{a.label}</p>
