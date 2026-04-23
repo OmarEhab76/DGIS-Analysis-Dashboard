@@ -1,4 +1,5 @@
 import { DashboardStats, DashboardTab } from '@/types/dashboard';
+import { PawPrint } from 'lucide-react';
 
 interface StatsCardsProps {
   activeTab: DashboardTab;
@@ -33,8 +34,8 @@ const StatsCards = ({ activeTab, stats, totalAnimals = 0, isLoading = false, has
           {
             label: 'Total Animals',
             value: showNoData ? '--' : totalAnimals.toLocaleString(),
-            iconSrc: '/icons/Total Trees.svg',
-            color: 'text-primary',
+            icon: PawPrint,
+            color: '#13EC5B',
           },
           areaScannedCard,
         ]
@@ -69,7 +70,11 @@ const StatsCards = ({ activeTab, stats, totalAnimals = 0, isLoading = false, has
                 {c.unit && <span className="text-sm font-normal text-muted-foreground ml-1">{c.unit}</span>}
               </p>
             </div>
-            <img src={c.iconSrc} alt={`${c.label} Icon`} className={`w-6 h-6 ${c.color} opacity-60`} />
+            {'icon' in c ? (
+              <c.icon className="w-6 h-6 opacity-60" style={{ color: c.color }} aria-hidden="true" />
+            ) : (
+              <img src={c.iconSrc} alt={`${c.label} Icon`} className={`w-6 h-6 ${c.color} opacity-60`} />
+            )}
           </div>
         ))}
       </div>

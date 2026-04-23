@@ -11,7 +11,10 @@ const BIOME_CONFIG = {
   'temperate-forest': {
     dbPath: process.env.DGIS_DB_PATH || path.resolve(process.cwd(), 'DGIS.db'),
     labels: {
-      flora: ['Hickory', 'Maple'],
+      flora: {
+        trees: ['Hickory', 'Maple'],
+        plants: [],
+      },
       fauna: ['Wood Frog', 'White-tailed Deer', 'Red Fox', 'Raccoon', 'American Black Bear'],
     },
   },
@@ -26,7 +29,10 @@ const BIOME_CONFIG = {
       invertY: true,
     },
     labels: {
-      flora: ['Birch Tree', 'Conifer'],
+      flora: {
+        trees: ['Birch Tree', 'Conifer'],
+        plants: [],
+      },
       fauna: ['Beaver', 'Lynx', 'Marten', 'Squirrel', 'Warbler', 'Woodpecker'],
     },
   },
@@ -41,7 +47,10 @@ const BIOME_CONFIG = {
       invertY: true,
     },
     labels: {
-      flora: ['Conifer', 'Edelweiss', 'Heather', 'Rhododendron'],
+      flora: {
+        trees: ['Conifer'],
+        plants: ['Edelweiss', 'Heather', 'Rhododendron'],
+      },
       fauna: ['Alpine Marmot', 'Elk', 'Golden Eagle', 'Grizzly Bear', 'Mountain Lion'],
     },
   },
@@ -61,7 +70,33 @@ function resolveBiome(rawBiome) {
 
 function getCategoryLabels(biome, category) {
   const config = BIOME_CONFIG[biome] || BIOME_CONFIG[DEFAULT_BIOME];
-  return category === 'fauna' ? config.labels.fauna : config.labels.flora;
+  if (category === 'fauna') {
+    return config.labels.fauna;
+  }
+
+  const floraGroups = config.labels.flora;
+  if (Array.isArray(floraGroups)) {
+    return floraGroups;
+  }
+
+  return [...floraGroups.trees, ...floraGroups.plants];
+}
+
+function getFloraLabelGroups(biome) {
+  const config = BIOME_CONFIG[biome] || BIOME_CONFIG[DEFAULT_BIOME];
+  const floraGroups = config.labels.flora;
+
+  if (Array.isArray(floraGroups)) {
+    return {
+      trees: floraGroups,
+      plants: [],
+    };
+  }
+
+  return {
+    trees: floraGroups.trees,
+    plants: floraGroups.plants,
+  };
 }
 
 function getDbForBiome(biome) {
@@ -124,6 +159,7 @@ app.get('/api/labels', (req, res) => {
 
   const category = req.query.category === 'fauna' ? 'fauna' : 'flora';
   const labels = getCategoryLabels(biome, category);
+  const floraGroups = category === 'flora' ? getFloraLabelGroups(biome) : null;
 
   const placeholders = labels.map(() => '?').join(',');
   const counts = db
@@ -140,7 +176,12 @@ app.get('/api/labels', (req, res) => {
   return res.json({
     labels: labels.map((name) => ({
       name,
-      group: category === 'flora' ? 'trees' : 'fauna',
+      group:
+        category === 'fauna'
+          ? 'fauna'
+          : floraGroups?.trees.includes(name)
+            ? 'trees'
+            : 'plants',
       count: countMap[name] || 0,
     })),
   });
@@ -262,14 +303,15 @@ app.get('/api/stats', (req, res) => {
   }
 
   const floraLabels = getCategoryLabels(biome, 'flora');
+  const floraGroups = getFloraLabelGroups(biome);
 
   const totals = db
     .prepare('SELECT COUNT(*) AS totalDetections FROM Observations')
     .get();
 
   const treeCount = db
-    .prepare(`SELECT COUNT(*) AS totalTrees FROM Observations WHERE Name IN (${floraLabels.map(() => '?').join(',')})`)
-    .get(...floraLabels);
+    .prepare(`SELECT COUNT(*) AS totalTrees FROM Observations WHERE Name IN (${floraGroups.trees.map(() => '?').join(',')})`)
+    .get(...floraGroups.trees);
 
   return res.json({
     stats: {
