@@ -4,10 +4,33 @@ import { getLabelMarkerStyle, getLabelStyle } from '@/lib/labelColors';
 import { Plus, Minus, Locate } from 'lucide-react';
 import StatsCards from '@/components/dashboard/StatsCards';
 
-const BOREAL_MAP_WIDTH = 1280;
-const BOREAL_MAP_HEIGHT = 1280;
-const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 4;
+interface MapProfile {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  minZoom: number;
+  maxZoom: number;
+}
+
+const MAP_PROFILES: Partial<Record<BiomeId, MapProfile>> = {
+  'boreal-forest': {
+    src: '/maps/object_topdown.png',
+    alt: 'Boreal forest terrain map',
+    width: 1280,
+    height: 1280,
+    minZoom: 0.5,
+    maxZoom: 4,
+  },
+  mountain: {
+    src: '/maps/Mountain.png',
+    alt: 'Mountain terrain map',
+    width: 1280,
+    height: 1280,
+    minZoom: 0.5,
+    maxZoom: 4,
+  },
+};
 
 interface MapViewProps {
   activeTab: DashboardTab;
@@ -46,11 +69,16 @@ const MapView = ({
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const isBorealForest = selectedBiome === 'boreal-forest';
+  const mapProfile = MAP_PROFILES[selectedBiome];
+  const isMapMode = Boolean(mapProfile);
 
   const clampPan = useCallback((candidatePan: { x: number; y: number }, nextZoom: number, viewportWidth: number, viewportHeight: number) => {
-    const scaledWidth = BOREAL_MAP_WIDTH * nextZoom;
-    const scaledHeight = BOREAL_MAP_HEIGHT * nextZoom;
+    if (!mapProfile) {
+      return candidatePan;
+    }
+
+    const scaledWidth = mapProfile.width * nextZoom;
+    const scaledHeight = mapProfile.height * nextZoom;
 
     const minX = scaledWidth > viewportWidth ? viewportWidth - scaledWidth : (viewportWidth - scaledWidth) / 2;
     const maxX = scaledWidth > viewportWidth ? 0 : (viewportWidth - scaledWidth) / 2;
@@ -61,30 +89,38 @@ const MapView = ({
       x: Math.min(maxX, Math.max(minX, candidatePan.x)),
       y: Math.min(maxY, Math.max(minY, candidatePan.y)),
     };
-  }, []);
+  }, [mapProfile]);
 
-  const centerBorealView = useCallback((nextZoom = 1) => {
+  const centerMapView = useCallback((nextZoom = 1) => {
+    if (!mapProfile) {
+      return;
+    }
+
     const viewport = mapViewportRef.current;
     if (!viewport) {
       return;
     }
 
     const centerPan = {
-      x: (viewport.clientWidth - BOREAL_MAP_WIDTH * nextZoom) / 2,
-      y: (viewport.clientHeight - BOREAL_MAP_HEIGHT * nextZoom) / 2,
+      x: (viewport.clientWidth - mapProfile.width * nextZoom) / 2,
+      y: (viewport.clientHeight - mapProfile.height * nextZoom) / 2,
     };
 
     setZoom(nextZoom);
     setPan(clampPan(centerPan, nextZoom, viewport.clientWidth, viewport.clientHeight));
-  }, [clampPan]);
+  }, [clampPan, mapProfile]);
 
-  const zoomBorealTo = useCallback((nextZoomRaw: number, anchor?: { x: number; y: number }) => {
+  const zoomMapTo = useCallback((nextZoomRaw: number, anchor?: { x: number; y: number }) => {
+    if (!mapProfile) {
+      return;
+    }
+
     const viewport = mapViewportRef.current;
     if (!viewport) {
       return;
     }
 
-    const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoomRaw));
+    const nextZoom = Math.min(mapProfile.maxZoom, Math.max(mapProfile.minZoom, nextZoomRaw));
     if (Math.abs(nextZoom - zoom) < 0.0001) {
       return;
     }
@@ -101,18 +137,18 @@ const MapView = ({
 
     setZoom(nextZoom);
     setPan(clampPan(nextPan, nextZoom, viewport.clientWidth, viewport.clientHeight));
-  }, [clampPan, pan.x, pan.y, zoom]);
+  }, [clampPan, mapProfile, pan.x, pan.y, zoom]);
 
   useEffect(() => {
-    if (!isBorealForest) {
+    if (!isMapMode) {
       return;
     }
 
-    centerBorealView(1);
-  }, [centerBorealView, isBorealForest]);
+    centerMapView(1);
+  }, [centerMapView, isMapMode]);
 
   useEffect(() => {
-    if (!isBorealForest) {
+    if (!isMapMode) {
       return;
     }
 
@@ -131,10 +167,10 @@ const MapView = ({
     return () => {
       window.removeEventListener('resize', onResize);
     };
-  }, [clampPan, isBorealForest, zoom]);
+  }, [clampPan, isMapMode, zoom]);
 
-  const handleBorealWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
-    if (!isBorealForest) {
+  const handleMapWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    if (!isMapMode) {
       return;
     }
 
@@ -151,11 +187,11 @@ const MapView = ({
       y: event.clientY - rect.top,
     };
     const factor = Math.exp(-event.deltaY * 0.0015);
-    zoomBorealTo(zoom * factor, anchor);
-  }, [isBorealForest, zoom, zoomBorealTo]);
+    zoomMapTo(zoom * factor, anchor);
+  }, [isMapMode, zoom, zoomMapTo]);
 
-  const handleBorealPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isBorealForest) {
+  const handleMapPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isMapMode) {
       return;
     }
 
@@ -173,10 +209,10 @@ const MapView = ({
       startPanY: pan.y,
     };
     setIsDragging(true);
-  }, [isBorealForest, pan.x, pan.y]);
+  }, [isMapMode, pan.x, pan.y]);
 
-  const handleBorealPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isBorealForest || !dragStateRef.current.active) {
+  const handleMapPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isMapMode || !dragStateRef.current.active) {
       return;
     }
 
@@ -191,10 +227,10 @@ const MapView = ({
     };
 
     setPan(clampPan(nextPan, zoom, viewport.clientWidth, viewport.clientHeight));
-  }, [clampPan, isBorealForest, zoom]);
+  }, [clampPan, isMapMode, zoom]);
 
-  const handleBorealPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isBorealForest) {
+  const handleMapPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isMapMode) {
       return;
     }
 
@@ -205,7 +241,7 @@ const MapView = ({
 
     dragStateRef.current.active = false;
     setIsDragging(false);
-  }, [isBorealForest]);
+  }, [isMapMode]);
 
   const labelScope = useMemo(() => {
     const fallback =
@@ -240,7 +276,7 @@ const MapView = ({
       return null;
     }
 
-    if (!isBorealForest) {
+    if (!mapProfile) {
       const popupLeft = hoveredDetection.percentX > 60 ? hoveredDetection.percentX - 25 : hoveredDetection.percentX + 3;
       const popupTop = hoveredDetection.percentY > 60 ? hoveredDetection.percentY - 35 : hoveredDetection.percentY + 3;
       return { left: `${popupLeft}%`, top: `${popupTop}%` };
@@ -251,8 +287,8 @@ const MapView = ({
       return { left: '16px', top: '16px' };
     }
 
-    const markerX = (hoveredDetection.percentX / 100) * BOREAL_MAP_WIDTH * zoom + pan.x;
-    const markerY = (hoveredDetection.percentY / 100) * BOREAL_MAP_HEIGHT * zoom + pan.y;
+    const markerX = (hoveredDetection.percentX / 100) * mapProfile.width * zoom + pan.x;
+    const markerY = (hoveredDetection.percentY / 100) * mapProfile.height * zoom + pan.y;
     const popupWidth = 208;
     const popupHeight = 220;
 
@@ -263,35 +299,35 @@ const MapView = ({
     const clampedTop = Math.min(viewport.clientHeight - popupHeight - 8, Math.max(8, desiredTop));
 
     return { left: `${clampedLeft}px`, top: `${clampedTop}px` };
-  }, [hoveredDetection, isBorealForest, pan.x, pan.y, zoom]);
+  }, [hoveredDetection, mapProfile, pan.x, pan.y, zoom]);
 
   return (
     <div className="relative flex-1 rounded-xl overflow-hidden bg-[hsl(140,25%,15%)] border border-border">
       {/* Map background */}
-      {isBorealForest ? (
+      {mapProfile ? (
         <div
           ref={mapViewportRef}
           className={`absolute inset-0 overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-          onWheel={handleBorealWheel}
-          onPointerDown={handleBorealPointerDown}
-          onPointerMove={handleBorealPointerMove}
-          onPointerUp={handleBorealPointerUp}
-          onPointerLeave={handleBorealPointerUp}
+          onWheel={handleMapWheel}
+          onPointerDown={handleMapPointerDown}
+          onPointerMove={handleMapPointerMove}
+          onPointerUp={handleMapPointerUp}
+          onPointerLeave={handleMapPointerUp}
         >
           <div
             className="absolute left-0 top-0"
             style={{
-              width: `${BOREAL_MAP_WIDTH}px`,
-              height: `${BOREAL_MAP_HEIGHT}px`,
+              width: `${mapProfile.width}px`,
+              height: `${mapProfile.height}px`,
               transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
               transformOrigin: 'top left',
             }}
           >
             <img
-              src="/maps/object_topdown.png"
-              alt="Boreal forest terrain map"
+              src={mapProfile.src}
+              alt={mapProfile.alt}
               className="block"
-              style={{ width: `${BOREAL_MAP_WIDTH}px`, height: `${BOREAL_MAP_HEIGHT}px` }}
+              style={{ width: `${mapProfile.width}px`, height: `${mapProfile.height}px` }}
               draggable={false}
             />
 
@@ -346,7 +382,7 @@ const MapView = ({
       </div>
 
       {/* Markers */}
-      {!isBorealForest && (
+      {!isMapMode && (
       <div className="absolute inset-0" style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}>
         {!isLoading &&
           detections.map((d) => (
@@ -439,8 +475,8 @@ const MapView = ({
       <div className="absolute bottom-4 right-4 flex flex-col gap-1">
         <button
           onClick={() => {
-            if (isBorealForest) {
-              zoomBorealTo(zoom + 0.2);
+            if (isMapMode) {
+              zoomMapTo(zoom + 0.2);
               return;
             }
 
@@ -452,8 +488,8 @@ const MapView = ({
         </button>
         <button
           onClick={() => {
-            if (isBorealForest) {
-              zoomBorealTo(zoom - 0.2);
+            if (isMapMode) {
+              zoomMapTo(zoom - 0.2);
               return;
             }
 
@@ -465,8 +501,8 @@ const MapView = ({
         </button>
         <button
           onClick={() => {
-            if (isBorealForest) {
-              centerBorealView(1);
+            if (isMapMode) {
+              centerMapView(1);
               return;
             }
 

@@ -17,6 +17,14 @@ const BIOME_CONFIG = {
   },
   'boreal-forest': {
     dbPath: path.resolve(process.cwd(), 'DGIS_Boreal.db'),
+    mapProjection: {
+      mode: 'fixed',
+      minX: 0,
+      maxX: 1000,
+      minZ: 0,
+      maxZ: 1000,
+      invertY: true,
+    },
     labels: {
       flora: ['Birch Tree', 'Conifer'],
       fauna: ['Beaver', 'Lynx', 'Marten', 'Squirrel', 'Warbler', 'Woodpecker'],
@@ -24,6 +32,14 @@ const BIOME_CONFIG = {
   },
   mountain: {
     dbPath: path.resolve(process.cwd(), 'DGIS_Mountain.db'),
+    mapProjection: {
+      mode: 'fixed',
+      minX: 0,
+      maxX: 1153,
+      minZ: 0,
+      maxZ: 1153,
+      invertY: true,
+    },
     labels: {
       flora: ['Conifer', 'Edelweiss', 'Heather', 'Rhododendron'],
       fauna: ['Alpine Marmot', 'Elk', 'Golden Eagle', 'Grizzly Bear', 'Mountain Lion'],
@@ -157,7 +173,7 @@ app.get('/api/detections', (req, res) => {
     return res.json({ detections: [] });
   }
 
-  const isBorealForest = biome === 'boreal-forest';
+  const mapProjection = BIOME_CONFIG[biome].mapProjection;
 
   const where = [];
   const params = [];
@@ -180,8 +196,8 @@ app.get('/api/detections', (req, res) => {
     params.push(dateTo);
   }
 
-  const bounds = isBorealForest
-    ? { minX: 0, maxX: 1000, minZ: 0, maxZ: 1000 }
+  const bounds = mapProjection?.mode === 'fixed'
+    ? mapProjection
     : db
         .prepare(
           `SELECT MIN(X) AS minX, MAX(X) AS maxX, MIN(Z) AS minZ, MAX(Z) AS maxZ
@@ -211,11 +227,13 @@ app.get('/api/detections', (req, res) => {
   const maxX = Number(bounds?.maxX ?? 0);
   const minZ = Number(bounds?.minZ ?? 0);
   const maxZ = Number(bounds?.maxZ ?? 0);
+  const invertY = bounds?.invertY ?? true;
 
   return res.json({
     detections: rows.map((row) => {
       const px = normalize(Number(row.x), minX, maxX);
       const py = normalize(Number(row.z ?? 0), minZ, maxZ);
+      const percentY = invertY ? 100 - py : py;
       return {
         id: row.id,
         name: row.name,
@@ -226,7 +244,7 @@ app.get('/api/detections', (req, res) => {
         confidence: Number(row.confidence),
         droneId: Number(row.droneId),
         percentX: Math.max(0, Math.min(100, px)),
-        percentY: Math.max(0, Math.min(100, 100 - py)),
+        percentY: Math.max(0, Math.min(100, percentY)),
       };
     }),
   });
