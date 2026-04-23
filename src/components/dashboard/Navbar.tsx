@@ -58,7 +58,6 @@ const Navbar = ({
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
-            <p className="text-[11px] text-muted-foreground mt-2">Temperate Forest and Boreal Forest currently have live database detections and stats.</p>
           </PopoverContent>
         </Popover>
 
