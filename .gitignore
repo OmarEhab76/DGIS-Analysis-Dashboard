@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temp
+vite.config.ts.timestamp-1776973102614-ff4ef0daf0bab.mjs

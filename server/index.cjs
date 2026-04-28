@@ -10,6 +10,14 @@ app.use(express.json());
 const BIOME_CONFIG = {
   'temperate-forest': {
     dbPath: process.env.DGIS_DB_PATH || path.resolve(process.cwd(), 'DGIS.db'),
+    mapProjection: {
+      mode: 'fixed',
+      minX: 0,
+      maxX: 1000,
+      minZ: 0,
+      maxZ: 1000,
+      invertY: true,
+    },
     labels: {
       flora: {
         trees: ['Hickory', 'Maple'],

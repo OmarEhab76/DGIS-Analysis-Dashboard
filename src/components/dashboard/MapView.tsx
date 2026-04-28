@@ -14,6 +14,14 @@ interface MapProfile {
 }
 
 const MAP_PROFILES: Partial<Record<BiomeId, MapProfile>> = {
+  'temperate-forest': {
+    src: '/maps/temperate_Forest.png',
+    alt: 'Temperate forest terrain map',
+    width: 1280,
+    height: 1280,
+    minZoom: 0.5,
+    maxZoom: 4,
+  },
   'boreal-forest': {
     src: '/maps/object_topdown.png',
     alt: 'Boreal forest terrain map',
