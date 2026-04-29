@@ -8,8 +8,18 @@ React Vite UI.**
 
 ## 🚀 What's New
 
-The project has recently evolved with unified state and live statistical
-capabilities:
+Latest updates from `git log` (as of 2026-04-29):
+
+- **Subtropical Desert expansion (2026-04-29):** Added `DGIS_Subtropical.db`
+  and integrated a dedicated Subtropical Desert map layer.
+- **Temperate map added (2026-04-29):** Introduced a new temperate map asset
+  for biome coverage expansion.
+- **Mountain biome improvements (2026-04-22 to 2026-04-23):** Added Mountain DB
+  support and refined true point placement with biome-specific map bounds.
+- **UI/category refinements (2026-04-23):** Updated animal icon usage and fixed
+  label category behavior in the dashboard.
+
+Recent foundational upgrades retained from earlier iterations:
 
 - **Interactive Charts with Recharts:** Implemented new responsive charts using
   the Recharts library, including a new Confidence Histogram to better visualize
