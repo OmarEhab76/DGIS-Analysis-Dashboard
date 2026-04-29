@@ -3,6 +3,7 @@
 A local dashboard for viewing and filtering ecological detections across supported biomes.
 
 The project runs as two local services:
+
 1. Frontend: React + Vite app on port `8080`
 2. Backend: Express API with SQLite on port `3001`
 
@@ -28,6 +29,7 @@ Optional:
 1. Bun (if you want Bun commands in addition to npm)
 
 Windows note:
+
 - If native module install fails for `better-sqlite3`, install the Visual Studio C++ Build Tools and retry dependency installation.
 
 ## Required Data Files
@@ -48,22 +50,22 @@ git clone <YOUR_REPOSITORY_URL>
 cd state-spun-main
 ```
 
-2. Install dependencies:
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Start frontend + backend together:
+1. Start frontend + backend together:
 
 ```bash
 npm run dev
 ```
 
-4. Open:
+1. Open:
 
-- Frontend: http://localhost:8080
-- API health check: http://localhost:3001/api/health
+- Frontend: <http://localhost:8080>
+- API health check: <http://localhost:3001/api/health>
 
 ## Run with Bun (Alternative)
 
@@ -73,7 +75,7 @@ npm run dev
 bun install
 ```
 
-2. Start both services:
+1. Start both services:
 
 ```bash
 bun run dev
@@ -119,12 +121,32 @@ After startup:
 ## Troubleshooting
 
 - Port already in use:
-	- Change `PORT` for API and update frontend proxy target in `vite.config.ts` if needed.
+  - Change `PORT` for API and update frontend proxy target in `vite.config.ts` if needed.
 - API returns database unavailable errors:
-	- Confirm `DGIS.db` and `DGIS_Boreal.db` exist in project root.
-	- If using a custom temperate DB path, verify `DGIS_DB_PATH` points to a real file.
+  - Confirm `DGIS.db` and `DGIS_Boreal.db` exist in project root.
+  - If using a custom temperate DB path, verify `DGIS_DB_PATH` points to a real file.
 - Frontend loads but no data:
-	- Confirm API is running and `/api/health` succeeds.
+  - Confirm API is running and `/api/health` succeeds.
+
+## Recent Project Changes
+
+Latest updates from the repository history (`git log --oneline -n 12`):
+
+- Updated the detailed guide documentation.
+- Added subtropical map support and a subtropical desert database.
+- Added temperate map support.
+- Removed outdated map-selection comment in `Navbar.tsx`.
+- Added animal icon and fixed category labels.
+- Improved map-point hover formatting to two decimal places.
+- Corrected mountain placement/bounds and added a mountain database.
+- Fixed zoom in/out behavior.
+- Adapted confidence score distribution for values below `50%`.
+- Added data to `DGIS_Boreal`.
+
+To inspect recent changes locally:
+
+1. `git log --oneline -n 20`
+1. `git show <commit_hash>`
 
 ## Project Structure
 
