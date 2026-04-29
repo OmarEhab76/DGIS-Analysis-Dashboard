@@ -6,7 +6,7 @@ export const BIOME_OPTIONS: BiomeOption[] = [
   { id: 'coastal-desert', label: 'Coastal Desert', hasDatabaseData: false },
   { id: 'mountain', label: 'Mountain', hasDatabaseData: true },
   { id: 'plains', label: 'Plains', hasDatabaseData: false },
-  { id: 'subtropical-desert', label: 'Subtropical Desert', hasDatabaseData: false },
+  { id: 'subtropical-desert', label: 'Subtropical Desert', hasDatabaseData: true },
 ];
 
 export const BIOME_LABEL_CATALOG: Record<BiomeId, BiomeLabelCatalog> = {

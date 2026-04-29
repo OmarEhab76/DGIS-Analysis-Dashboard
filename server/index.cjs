@@ -62,6 +62,24 @@ const BIOME_CONFIG = {
       fauna: ['Alpine Marmot', 'Elk', 'Golden Eagle', 'Grizzly Bear', 'Mountain Lion'],
     },
   },
+  'subtropical-desert': {
+    dbPath: path.resolve(process.cwd(), 'DGIS_Subtropical.db'),
+    mapProjection: {
+      mode: 'fixed',
+      minX: 0,
+      maxX: 1000,
+      minZ: 0,
+      maxZ: 1000,
+      invertY: true,
+    },
+    labels: {
+      flora: {
+        trees: ['Date Palm'],
+        plants: ['Aloe Vera Plant', 'Salvia Plant'],
+      },
+      fauna: ['Jerboa', 'Desert Scorpion', 'Fennec Fox', 'Dromedary Camel', 'Gecko', 'Horned Lizard'],
+    },
+  },
 };
 
 const DEFAULT_BIOME = 'temperate-forest';
