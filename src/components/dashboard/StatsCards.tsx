@@ -49,7 +49,7 @@ const StatsCards = ({ activeTab, stats, totalAnimals = 0, isLoading = false, has
           },
           {
             label: 'Total Plants',
-            value: showNoData ? '--' : stats ? stats.totalPlants : '-',
+            value: showNoData ? '--' : stats ? stats.totalPlants.toLocaleString() : '0',
             iconSrc: '/icons/Total Plants.svg',
             color: 'text-primary',
           },

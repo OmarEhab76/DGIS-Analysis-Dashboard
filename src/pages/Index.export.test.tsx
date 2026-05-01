@@ -18,7 +18,7 @@ const DETECTIONS_QUERY_RESULT = {
 };
 
 const STATS_QUERY_RESULT = {
-  data: { totalDetections: 0, totalTrees: 0, totalPlants: '-', areaScanned: 0 },
+  data: { totalDetections: 0, totalTrees: 0, totalPlants: 0, areaScanned: 0 },
   isLoading: false,
   isError: false,
 };

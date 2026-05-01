@@ -81,6 +81,6 @@ export function getBiomeLabels(biome: BiomeId, tab: DashboardTab): DashboardLabe
 export const BIOME_NO_DATA_STATS: DashboardStats = {
   totalDetections: 0,
   totalTrees: 0,
-  totalPlants: '--',
+  totalPlants: 0,
   areaScanned: 0,
 };

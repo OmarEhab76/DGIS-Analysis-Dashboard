@@ -346,7 +346,6 @@ app.get('/api/stats', (req, res) => {
     return res.status(500).json({ error: `Database is not available for ${biome}: ${dbPath}`, details: String(error?.message || error || '') });
   }
 
-  const floraLabels = getCategoryLabels(biome, 'flora');
   const floraGroups = getFloraLabelGroups(biome);
 
   const totals = db
@@ -359,11 +358,17 @@ app.get('/api/stats', (req, res) => {
         .get(...floraGroups.trees)
     : { totalTrees: 0 };
 
+  const plantCount = floraGroups.plants.length > 0
+    ? db
+        .prepare(`SELECT COUNT(*) AS totalPlants FROM Observations WHERE Name IN (${floraGroups.plants.map(() => '?').join(',')})`)
+        .get(...floraGroups.plants)
+    : { totalPlants: 0 };
+
   return res.json({
     stats: {
       totalDetections: Number(totals?.totalDetections ?? 0),
       totalTrees: Number(treeCount?.totalTrees ?? 0),
-      totalPlants: '-',
+      totalPlants: Number(plantCount?.totalPlants ?? 0),
       areaScanned: 2.4,
     },
   });

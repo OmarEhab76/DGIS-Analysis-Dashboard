@@ -46,7 +46,7 @@ export interface Detection {
 export interface DashboardStats {
   totalDetections: number;
   totalTrees: number;
-  totalPlants: string;
+  totalPlants: number;
   areaScanned: number;
 }
 
