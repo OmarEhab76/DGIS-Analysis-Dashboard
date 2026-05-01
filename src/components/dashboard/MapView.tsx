@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { BiomeId, DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
-import { getLabelMarkerStyle, getLabelStyle } from '@/lib/labelColors';
+import { getLabelColorValue, getLabelMarkerStyle, getLabelStyle } from '@/lib/labelColors';
 import { Plus, Minus, Locate } from 'lucide-react';
 import StatsCards from '@/components/dashboard/StatsCards';
 
@@ -69,6 +69,33 @@ interface MapViewProps {
   isLoading?: boolean;
 }
 
+interface FaunaDensityBubble {
+  id: string;
+  label: string;
+  color: string;
+  count: number;
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+  leftPercent: number;
+  topPercent: number;
+  widthPercent: number;
+  heightPercent: number;
+}
+
+interface HoveredBubbleState {
+  bubble: FaunaDensityBubble;
+  surfaceX: number;
+  surfaceY: number;
+}
+
+const FAUNA_CLUSTER_AXIS_DISTANCE = 50;
+const FAUNA_CLUSTER_MIN_POINTS = 5;
+const BUBBLE_AREA_PADDING_PERCENT = 1.4;
+const BUBBLE_AREA_MIN_SIZE_PERCENT = 4;
+const BUBBLE_HOVER_DELAY_MS = 320;
+
 const MapView = ({
   activeTab,
   detections,
@@ -81,6 +108,7 @@ const MapView = ({
   isLoadingStats = false,
   isLoading = false,
 }: MapViewProps) => {
+  const mapRootRef = useRef<HTMLDivElement | null>(null);
   const mapViewportRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ active: boolean; startX: number; startY: number; startPanX: number; startPanY: number }>({
     active: false,
@@ -89,7 +117,9 @@ const MapView = ({
     startPanX: 0,
     startPanY: 0,
   });
+  const bubbleHoverTimerRef = useRef<number | null>(null);
   const [hoveredDetection, setHoveredDetection] = useState<Detection | null>(null);
+  const [hoveredBubble, setHoveredBubble] = useState<HoveredBubbleState | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -267,6 +297,59 @@ const MapView = ({
     setIsDragging(false);
   }, [isMapMode]);
 
+  const clearBubbleHoverTimer = useCallback(() => {
+    if (bubbleHoverTimerRef.current !== null) {
+      window.clearTimeout(bubbleHoverTimerRef.current);
+      bubbleHoverTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => clearBubbleHoverTimer(), [clearBubbleHoverTimer]);
+
+  const scheduleBubbleHover = useCallback(
+    (bubble: FaunaDensityBubble, event: React.MouseEvent<HTMLDivElement>) => {
+      if (hoveredDetection) {
+        return;
+      }
+
+      const surface = isMapMode ? mapViewportRef.current : mapRootRef.current;
+      if (!surface) {
+        return;
+      }
+
+      const rect = surface.getBoundingClientRect();
+      const surfaceX = event.clientX - rect.left;
+      const surfaceY = event.clientY - rect.top;
+
+      clearBubbleHoverTimer();
+      bubbleHoverTimerRef.current = window.setTimeout(() => {
+        if (!hoveredDetection) {
+          setHoveredBubble({ bubble, surfaceX, surfaceY });
+        }
+      }, BUBBLE_HOVER_DELAY_MS);
+    },
+    [clearBubbleHoverTimer, hoveredDetection, isMapMode]
+  );
+
+  const handleBubbleMouseEnter = useCallback(
+    (bubble: FaunaDensityBubble, event: React.MouseEvent<HTMLDivElement>) => {
+      scheduleBubbleHover(bubble, event);
+    },
+    [scheduleBubbleHover]
+  );
+
+  const handleBubbleMouseMove = useCallback(
+    (bubble: FaunaDensityBubble, event: React.MouseEvent<HTMLDivElement>) => {
+      scheduleBubbleHover(bubble, event);
+    },
+    [scheduleBubbleHover]
+  );
+
+  const handleBubbleMouseLeave = useCallback(() => {
+    clearBubbleHoverTimer();
+    setHoveredBubble(null);
+  }, [clearBubbleHoverTimer]);
+
   const labelScope = useMemo(() => {
     const fallback =
       activeTab === 'flora'
@@ -287,6 +370,102 @@ const MapView = ({
     return source.map((name) => ({ name }));
   }, [activeTab, detections, labels]);
 
+  const faunaDensityBubbles = useMemo<FaunaDensityBubble[]>(() => {
+    if (activeTab !== 'fauna' || isLoading || detections.length < FAUNA_CLUSTER_MIN_POINTS) {
+      return [];
+    }
+
+    const detectionsByLabel = new Map<string, Detection[]>();
+    detections.forEach((detection) => {
+      const bucket = detectionsByLabel.get(detection.name) ?? [];
+      bucket.push(detection);
+      detectionsByLabel.set(detection.name, bucket);
+    });
+
+    const bubbles: FaunaDensityBubble[] = [];
+
+    detectionsByLabel.forEach((labelDetections, label) => {
+      if (labelDetections.length < FAUNA_CLUSTER_MIN_POINTS) {
+        return;
+      }
+
+      const visited = new Array(labelDetections.length).fill(false);
+      for (let start = 0; start < labelDetections.length; start += 1) {
+        if (visited[start]) {
+          continue;
+        }
+
+        const queue = [start];
+        const componentIndices: number[] = [];
+        visited[start] = true;
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+          if (current === undefined) {
+            continue;
+          }
+
+          componentIndices.push(current);
+          const source = labelDetections[current];
+
+          for (let other = 0; other < labelDetections.length; other += 1) {
+            if (visited[other]) {
+              continue;
+            }
+
+            const target = labelDetections[other];
+            const xDistance = Math.abs(source.x - target.x);
+            const zDistance = Math.abs(source.z - target.z);
+            if (xDistance <= FAUNA_CLUSTER_AXIS_DISTANCE && zDistance <= FAUNA_CLUSTER_AXIS_DISTANCE) {
+              visited[other] = true;
+              queue.push(other);
+            }
+          }
+        }
+
+        if (componentIndices.length < FAUNA_CLUSTER_MIN_POINTS) {
+          continue;
+        }
+
+        const componentDetections = componentIndices.map((index) => labelDetections[index]);
+        const minPercentX = Math.min(...componentDetections.map((point) => point.percentX));
+        const maxPercentX = Math.max(...componentDetections.map((point) => point.percentX));
+        const minPercentY = Math.min(...componentDetections.map((point) => point.percentY));
+        const maxPercentY = Math.max(...componentDetections.map((point) => point.percentY));
+
+        const centerX = (minPercentX + maxPercentX) / 2;
+        const centerY = (minPercentY + maxPercentY) / 2;
+        const rawWidth = (maxPercentX - minPercentX) + BUBBLE_AREA_PADDING_PERCENT * 2;
+        const rawHeight = (maxPercentY - minPercentY) + BUBBLE_AREA_PADDING_PERCENT * 2;
+        const widthPercent = Math.max(rawWidth, BUBBLE_AREA_MIN_SIZE_PERCENT);
+        const heightPercent = Math.max(rawHeight, BUBBLE_AREA_MIN_SIZE_PERCENT);
+        const leftPercent = Math.max(0, Math.min(100 - widthPercent, centerX - widthPercent / 2));
+        const topPercent = Math.max(0, Math.min(100 - heightPercent, centerY - heightPercent / 2));
+
+        bubbles.push({
+          id: `${label}-${componentDetections[0].id}-${componentDetections.length}`,
+          label,
+          color: getLabelColorValue(label, labelScope),
+          count: componentDetections.length,
+          minX: Math.min(...componentDetections.map((point) => point.x)),
+          maxX: Math.max(...componentDetections.map((point) => point.x)),
+          minZ: Math.min(...componentDetections.map((point) => point.z)),
+          maxZ: Math.max(...componentDetections.map((point) => point.z)),
+          leftPercent,
+          topPercent,
+          widthPercent,
+          heightPercent,
+        });
+      }
+    });
+
+    return [...bubbles].sort((a, b) => {
+      const areaA = a.widthPercent * a.heightPercent;
+      const areaB = b.widthPercent * b.heightPercent;
+      return areaB - areaA;
+    });
+  }, [activeTab, detections, isLoading, labelScope]);
+
   const hasNoDatabaseObservations =
     hasLiveData && !isLoading && !isLoadingStats && Number(stats?.totalDetections ?? 0) === 0;
 
@@ -294,6 +473,19 @@ const MapView = ({
     () => labels.filter((label) => label.group === 'fauna').reduce((sum, label) => sum + label.count, 0),
     [labels]
   );
+
+  useEffect(() => {
+    if (hoveredDetection) {
+      clearBubbleHoverTimer();
+      setHoveredBubble(null);
+    }
+  }, [clearBubbleHoverTimer, hoveredDetection]);
+
+  useEffect(() => {
+    if (hoveredBubble && !faunaDensityBubbles.some((bubble) => bubble.id === hoveredBubble.bubble.id)) {
+      setHoveredBubble(null);
+    }
+  }, [faunaDensityBubbles, hoveredBubble]);
 
   const hoveredPopupStyle = useMemo(() => {
     if (!hoveredDetection) {
@@ -325,8 +517,28 @@ const MapView = ({
     return { left: `${clampedLeft}px`, top: `${clampedTop}px` };
   }, [hoveredDetection, mapProfile, pan.x, pan.y, zoom]);
 
+  const hoveredBubblePopupStyle = useMemo(() => {
+    if (!hoveredBubble || hoveredDetection) {
+      return null;
+    }
+
+    const surface = isMapMode ? mapViewportRef.current : mapRootRef.current;
+    if (!surface) {
+      return { left: '16px', top: '16px' };
+    }
+
+    const popupWidth = 260;
+    const popupHeight = 130;
+    const desiredLeft = hoveredBubble.surfaceX + (hoveredBubble.surfaceX > surface.clientWidth * 0.6 ? -popupWidth - 12 : 12);
+    const desiredTop = hoveredBubble.surfaceY + (hoveredBubble.surfaceY > surface.clientHeight * 0.6 ? -popupHeight - 12 : 12);
+    const clampedLeft = Math.min(surface.clientWidth - popupWidth - 8, Math.max(8, desiredLeft));
+    const clampedTop = Math.min(surface.clientHeight - popupHeight - 8, Math.max(8, desiredTop));
+
+    return { left: `${clampedLeft}px`, top: `${clampedTop}px` };
+  }, [hoveredBubble, hoveredDetection, isMapMode]);
+
   return (
-    <div className="relative flex-1 rounded-xl overflow-hidden bg-[hsl(140,25%,15%)] border border-border">
+    <div ref={mapRootRef} className="relative flex-1 rounded-xl overflow-hidden bg-[hsl(140,25%,15%)] border border-border">
       {/* Map background */}
       {mapProfile ? (
         <div
@@ -356,10 +568,31 @@ const MapView = ({
             />
 
             {!isLoading &&
+              faunaDensityBubbles.map((bubble) => (
+                <div
+                  key={bubble.id}
+                  className="absolute rounded-full border cursor-default z-0"
+                  style={{
+                    left: `${bubble.leftPercent}%`,
+                    top: `${bubble.topPercent}%`,
+                    width: `${bubble.widthPercent}%`,
+                    height: `${bubble.heightPercent}%`,
+                    backgroundColor: bubble.color,
+                    borderColor: bubble.color,
+                    boxShadow: `0 0 16px ${bubble.color}`,
+                    opacity: 0.22,
+                  }}
+                  onMouseEnter={(event) => handleBubbleMouseEnter(bubble, event)}
+                  onMouseMove={(event) => handleBubbleMouseMove(bubble, event)}
+                  onMouseLeave={handleBubbleMouseLeave}
+                />
+              ))}
+
+            {!isLoading &&
               detections.map((d) => (
                 <div
                   key={d.id}
-                  className="absolute w-3 h-3 rounded-full cursor-pointer transition-transform hover:scale-150"
+                  className="absolute w-3 h-3 rounded-full cursor-pointer transition-transform hover:scale-150 z-10"
                   style={{
                     left: `${d.percentX}%`,
                     top: `${d.percentY}%`,
@@ -409,10 +642,31 @@ const MapView = ({
       {!isMapMode && (
       <div className="absolute inset-0" style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}>
         {!isLoading &&
+          faunaDensityBubbles.map((bubble) => (
+            <div
+              key={bubble.id}
+              className="absolute rounded-full border cursor-default z-0"
+              style={{
+                left: `${bubble.leftPercent}%`,
+                top: `${bubble.topPercent}%`,
+                width: `${bubble.widthPercent}%`,
+                height: `${bubble.heightPercent}%`,
+                backgroundColor: bubble.color,
+                borderColor: bubble.color,
+                boxShadow: `0 0 16px ${bubble.color}`,
+                opacity: 0.22,
+              }}
+              onMouseEnter={(event) => handleBubbleMouseEnter(bubble, event)}
+              onMouseMove={(event) => handleBubbleMouseMove(bubble, event)}
+              onMouseLeave={handleBubbleMouseLeave}
+            />
+          ))}
+
+        {!isLoading &&
           detections.map((d) => (
             <div
               key={d.id}
-              className="absolute w-3 h-3 rounded-full cursor-pointer transition-transform hover:scale-150"
+              className="absolute w-3 h-3 rounded-full cursor-pointer transition-transform hover:scale-150 z-10"
               style={{
                 left: `${d.percentX}%`,
                 top: `${d.percentY}%`,
@@ -482,6 +736,34 @@ const MapView = ({
               ))}
             </div>
           </div>
+      )}
+
+      {!hoveredDetection && hoveredBubble && hoveredBubblePopupStyle && (
+        <div
+          className="absolute z-20 w-[260px] bg-card/90 backdrop-blur-md rounded-xl border border-border p-3 shadow-lg pointer-events-none"
+          style={hoveredBubblePopupStyle}
+        >
+          <p className="font-semibold text-foreground text-sm mb-1">
+            Area with many {hoveredBubble.bubble.label} detections
+          </p>
+          <p className="text-xs text-muted-foreground mb-2">
+            {hoveredBubble.bubble.count} detections in this cluster
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-secondary rounded-md p-2 text-center">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">X Range</p>
+              <p className="text-xs font-bold text-foreground">
+                {hoveredBubble.bubble.minX.toFixed(2)} to {hoveredBubble.bubble.maxX.toFixed(2)}
+              </p>
+            </div>
+            <div className="bg-secondary rounded-md p-2 text-center">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Z Range</p>
+              <p className="text-xs font-bold text-foreground">
+                {hoveredBubble.bubble.minZ.toFixed(2)} to {hoveredBubble.bubble.maxZ.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Legend */}
