@@ -5,7 +5,7 @@ export const BIOME_OPTIONS: BiomeOption[] = [
   { id: 'boreal-forest', label: 'Boreal Forest', hasDatabaseData: true },
   { id: 'coastal-desert', label: 'Coastal Desert', hasDatabaseData: false },
   { id: 'mountain', label: 'Mountain', hasDatabaseData: true },
-  { id: 'plains', label: 'Plains', hasDatabaseData: false },
+  { id: 'plains', label: 'Plains', hasDatabaseData: true },
   { id: 'subtropical-desert', label: 'Subtropical Desert', hasDatabaseData: true },
 ];
 

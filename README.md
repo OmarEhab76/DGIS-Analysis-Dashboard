@@ -39,6 +39,7 @@ The API expects these SQLite files in the project root:
 - `DGIS.db`
 - `DGIS_Boreal.db`
 - `DGIS_Mountain.db`
+- `DGIS_Plains.db`
 - `DGIS_Subtropical.db`
 
 These files are currently present in this repository.
@@ -50,12 +51,12 @@ Biomes currently connected to live database-backed API data:
 - `temperate-forest` -> `DGIS.db`
 - `boreal-forest` -> `DGIS_Boreal.db`
 - `mountain` -> `DGIS_Mountain.db`
+- `plains` -> `DGIS_Plains.db`
 - `subtropical-desert` -> `DGIS_Subtropical.db`
 
 Biomes currently available as UI placeholders only (no live DB detections yet):
 
 - `coastal-desert`
-- `plains`
 
 ## Run the Project (Recommended: npm)
 
@@ -132,8 +133,8 @@ After startup:
 
 1. `http://localhost:8080` loads the dashboard UI.
 2. `http://localhost:3001/api/health` returns `ok: true` when databases are accessible.
-3. `/api/health` reports all four live biomes as available: `temperate-forest`, `boreal-forest`, `mountain`, and `subtropical-desert`.
-4. Switching to `coastal-desert` or `plains` shows placeholder/no-live-data behavior (expected).
+3. `/api/health` reports all five live biomes as available: `temperate-forest`, `boreal-forest`, `mountain`, `plains`, and `subtropical-desert`.
+4. Switching to `coastal-desert` shows placeholder/no-live-data behavior (expected).
 5. `http://localhost:8080/statistics-dashboard` loads the statistics page.
 
 ## Troubleshooting
@@ -141,11 +142,11 @@ After startup:
 - Port already in use:
   - Change `PORT` for API and update frontend proxy target in `vite.config.ts` if needed.
 - API returns database unavailable errors:
-  - Confirm `DGIS.db`, `DGIS_Boreal.db`, `DGIS_Mountain.db`, and `DGIS_Subtropical.db` exist in project root.
+  - Confirm `DGIS.db`, `DGIS_Boreal.db`, `DGIS_Mountain.db`, `DGIS_Plains.db`, and `DGIS_Subtropical.db` exist in project root.
   - If using a custom temperate DB path, verify `DGIS_DB_PATH` points to a real file.
 - Frontend loads but no data:
   - Confirm API is running and `/api/health` succeeds.
-  - For `coastal-desert` and `plains`, no live detections is expected (placeholder biomes).
+  - For `coastal-desert`, no live detections is expected (placeholder biome).
 
 ## Recent Project Changes
 

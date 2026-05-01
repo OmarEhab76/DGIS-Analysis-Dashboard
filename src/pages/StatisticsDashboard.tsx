@@ -394,6 +394,8 @@ const StatisticsDashboard = () => {
       ? 'DGIS_Boreal.db'
       : selectedBiome === 'mountain'
         ? 'DGIS_Mountain.db'
+        : selectedBiome === 'plains'
+          ? 'DGIS_Plains.db'
         : selectedBiome === 'subtropical-desert'
           ? 'DGIS_Subtropical.db'
         : 'DGIS.db';

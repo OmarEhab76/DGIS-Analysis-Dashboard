@@ -62,6 +62,24 @@ const BIOME_CONFIG = {
       fauna: ['Alpine Marmot', 'Elk', 'Golden Eagle', 'Grizzly Bear', 'Mountain Lion'],
     },
   },
+  plains: {
+    dbPath: path.resolve(process.cwd(), 'DGIS_Plains.db'),
+    mapProjection: {
+      mode: 'fixed',
+      minX: 0,
+      maxX: 1000,
+      minZ: 0,
+      maxZ: 1000,
+      invertY: true,
+    },
+    labels: {
+      flora: {
+        trees: [],
+        plants: ['Buffalograss'],
+      },
+      fauna: ['Bison', 'Black-footed Ferret', 'Burrowing Owl', 'Hyena', 'Lion', 'Ornate Box Turtle', 'Pipit', 'Plains Elephant', 'Quail', 'Zebra'],
+    },
+  },
   'subtropical-desert': {
     dbPath: path.resolve(process.cwd(), 'DGIS_Subtropical.db'),
     mapProjection: {
@@ -335,9 +353,11 @@ app.get('/api/stats', (req, res) => {
     .prepare('SELECT COUNT(*) AS totalDetections FROM Observations')
     .get();
 
-  const treeCount = db
-    .prepare(`SELECT COUNT(*) AS totalTrees FROM Observations WHERE Name IN (${floraGroups.trees.map(() => '?').join(',')})`)
-    .get(...floraGroups.trees);
+  const treeCount = floraGroups.trees.length > 0
+    ? db
+        .prepare(`SELECT COUNT(*) AS totalTrees FROM Observations WHERE Name IN (${floraGroups.trees.map(() => '?').join(',')})`)
+        .get(...floraGroups.trees)
+    : { totalTrees: 0 };
 
   return res.json({
     stats: {
