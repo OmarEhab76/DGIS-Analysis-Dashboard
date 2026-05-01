@@ -13,6 +13,7 @@ import { getLabelColorValue } from '@/lib/labelColors';
 import { BiomeId, DashboardTab, Filters } from '@/types/dashboard';
 
 const SELECTED_BIOME_STORAGE_KEY = 'dgis:selected-biome';
+const ACTIVE_TAB_STORAGE_KEY = 'dgis:active-tab';
 
 const getInitialBiome = (): BiomeId => {
   if (typeof window === 'undefined') {
@@ -22,6 +23,15 @@ const getInitialBiome = (): BiomeId => {
   const storedBiome = window.localStorage.getItem(SELECTED_BIOME_STORAGE_KEY);
   const isValidBiome = BIOME_OPTIONS.some((biome) => biome.id === storedBiome);
   return isValidBiome ? (storedBiome as BiomeId) : 'temperate-forest';
+};
+
+const getInitialTab = (): DashboardTab => {
+  if (typeof window === 'undefined') {
+    return 'flora';
+  }
+
+  const storedTab = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+  return storedTab === 'flora' || storedTab === 'fauna' ? storedTab : 'flora';
 };
 
 const CONFIDENCE_BIN_START = 0;
@@ -387,7 +397,7 @@ const CustomMorphologyTooltip = ({ active, payload, activeBiomeLabel }: BaseTool
 
 const StatisticsDashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<DashboardTab>('flora');
+  const [activeTab, setActiveTab] = useState<DashboardTab>(getInitialTab);
   const [selectedBiome, setSelectedBiome] = useState<BiomeId>(getInitialBiome);
   const [filters, setFilters] = useState<Filters>({
     dateFrom: '',
@@ -434,6 +444,14 @@ const StatisticsDashboard = () => {
 
     window.localStorage.setItem(SELECTED_BIOME_STORAGE_KEY, selectedBiome);
   }, [selectedBiome]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     if (!labelsQuery.data) {
