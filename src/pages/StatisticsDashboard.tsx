@@ -12,6 +12,18 @@ import { getDetections, getLabels, getStats } from '@/lib/dashboardApi';
 import { getLabelColorValue } from '@/lib/labelColors';
 import { BiomeId, DashboardTab, Filters } from '@/types/dashboard';
 
+const SELECTED_BIOME_STORAGE_KEY = 'dgis:selected-biome';
+
+const getInitialBiome = (): BiomeId => {
+  if (typeof window === 'undefined') {
+    return 'temperate-forest';
+  }
+
+  const storedBiome = window.localStorage.getItem(SELECTED_BIOME_STORAGE_KEY);
+  const isValidBiome = BIOME_OPTIONS.some((biome) => biome.id === storedBiome);
+  return isValidBiome ? (storedBiome as BiomeId) : 'temperate-forest';
+};
+
 const CONFIDENCE_BIN_START = 0;
 const CONFIDENCE_BIN_END = 100;
 const CONFIDENCE_BIN_STEP = 10;
@@ -376,7 +388,7 @@ const CustomMorphologyTooltip = ({ active, payload, activeBiomeLabel }: BaseTool
 const StatisticsDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DashboardTab>('flora');
-  const [selectedBiome, setSelectedBiome] = useState<BiomeId>('temperate-forest');
+  const [selectedBiome, setSelectedBiome] = useState<BiomeId>(getInitialBiome);
   const [filters, setFilters] = useState<Filters>({
     dateFrom: '',
     dateTo: '',
@@ -413,6 +425,14 @@ const StatisticsDashboard = () => {
       confidenceMin: 81,
       selectedLabels: [],
     });
+  }, [selectedBiome]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(SELECTED_BIOME_STORAGE_KEY, selectedBiome);
   }, [selectedBiome]);
 
   useEffect(() => {

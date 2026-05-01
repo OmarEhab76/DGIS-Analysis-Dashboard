@@ -10,10 +10,22 @@ import { getDetections, getLabels, getStats } from '@/lib/dashboardApi';
 import { buildDetectionsCsv, buildExportFilename, downloadCsvFile } from '@/lib/csvExport';
 import { BIOME_NO_DATA_STATS, BIOME_OPTIONS, getBiomeLabels } from '@/data/mockData';
 
+const SELECTED_BIOME_STORAGE_KEY = 'dgis:selected-biome';
+
+const getInitialBiome = (): BiomeId => {
+  if (typeof window === 'undefined') {
+    return 'temperate-forest';
+  }
+
+  const storedBiome = window.localStorage.getItem(SELECTED_BIOME_STORAGE_KEY);
+  const isValidBiome = BIOME_OPTIONS.some((biome) => biome.id === storedBiome);
+  return isValidBiome ? (storedBiome as BiomeId) : 'temperate-forest';
+};
+
 const Index = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DashboardTab>('flora');
-  const [selectedBiome, setSelectedBiome] = useState<BiomeId>('temperate-forest');
+  const [selectedBiome, setSelectedBiome] = useState<BiomeId>(getInitialBiome);
   const [filters, setFilters] = useState<Filters>({
     dateFrom: '',
     dateTo: '',
@@ -50,6 +62,14 @@ const Index = () => {
       confidenceMin: 81,
       selectedLabels: [],
     });
+  }, [selectedBiome]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(SELECTED_BIOME_STORAGE_KEY, selectedBiome);
   }, [selectedBiome]);
 
   useEffect(() => {
