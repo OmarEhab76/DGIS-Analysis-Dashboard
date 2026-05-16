@@ -63,15 +63,15 @@ const taxonomyMap: Record<string, string> = {
   'Beaver': 'Mammals', 'Lynx': 'Mammals', 'Marten': 'Mammals', 'Squirrel': 'Mammals',
   'Warbler': 'Birds', 'Woodpecker': 'Birds',
   // Fauna: Coastal Desert
-  'Desert Bighorn Sheep': 'Mammals', 'Desert Gazelle': 'Mammals',
+  'Desert Bighorn Sheep': 'Mammals', 'Dorcas Gazelle': 'Mammals', 'Desert Gazelle': 'Mammals',
   'Pelican': 'Birds', 'Seabird': 'Birds', 'Seabird (avg)': 'Birds',
-  'Desert Tortoise': 'Reptiles', 'Rattlesnake': 'Reptiles',
+  'Tortoise': 'Reptiles', 'Desert Tortoise': 'Reptiles', 'Rattlesnake': 'Reptiles',
   // Fauna: Mountain
   'Alpine Marmot': 'Mammals', 'Elk': 'Mammals', 'Grizzly Bear': 'Mammals', 'Mountain Lion': 'Mammals',
   'Golden Eagle': 'Birds',
   // Fauna: Plains
-  'Bison': 'Mammals', 'Black-footed Ferret': 'Mammals', 'Hyena': 'Mammals', 'Lion': 'Mammals', 'Plains Elephant': 'Mammals', 'Zebra': 'Mammals',
-  'Burrowing Owl': 'Birds', 'Pipit': 'Birds', 'Quail': 'Birds',
+  'Bison': 'Mammals', 'Black-footed Ferret': 'Mammals', 'Hyena': 'Mammals', 'Lion': 'Mammals', 'Elephant': 'Mammals', 'Zebra': 'Mammals',
+  'Pipit': 'Birds', 'Quail': 'Birds',
   'Ornate Box Turtle': 'Reptiles',
   // Fauna: Subtropical Desert
   'Jerboa': 'Mammals', 'Fennec Fox': 'Mammals', 'Dromedary Camel': 'Mammals',
@@ -91,7 +91,7 @@ const taxonomyMap: Record<string, string> = {
   // Flora: Trees - Angiosperms (Desert/Tropical)
   'Desert Willow': 'Desert / Tropical Trees', 'Date Palm': 'Desert / Tropical Trees',
   // Flora: Shrubs & Herbs (Ground Plants)
-  'Buffalograss': 'Herbs / Ground Plants', 'Edelweiss': 'Herbs / Ground Plants', 'Heather': 'Herbs / Ground Plants', 'Rhododendron': 'Herbs / Ground Plants',
+  'Edelweiss': 'Herbs / Ground Plants', 'Heather': 'Herbs / Ground Plants', 'Rhododendron': 'Herbs / Ground Plants',
   // Flora: Succulents & Desert Plants
   'Agave': 'Succulents & Desert Plants', 'Cactus': 'Succulents & Desert Plants', 'Aloe Vera Plant': 'Succulents & Desert Plants',
   // Flora: Flowering/Medicinal Plants
@@ -168,10 +168,13 @@ const MORPHOLOGY_FAUNA_SPECIES_DIMENSIONS: Record<string, FaunaMorphologySpecies
   'Warbler': { averageWeightKg: 0.0165, averageSizeCm: 12.5 },
   'Woodpecker': { averageWeightKg: 0.21, averageSizeCm: 32.5 },
   'Desert Bighorn Sheep': { averageWeightKg: 92.5, averageSizeCm: 87.5 },
+  'Tortoise': { averageWeightKg: 5.5, averageSizeCm: 30 },
   'Desert Tortoise': { averageWeightKg: 5.5, averageSizeCm: 30 },
+  'Dorcas Gazelle': { averageWeightKg: 20, averageSizeCm: 60 },
   'Desert Gazelle': { averageWeightKg: 20, averageSizeCm: 60 },
   'Pelican': { averageWeightKg: 8.5, averageSizeCm: 140 },
   'Rattlesnake': { averageWeightKg: 1.5, averageSizeCm: 105 },
+  'Seabird': { averageWeightKg: 0.85, averageSizeCm: 50 },
   'Seabird (avg)': { averageWeightKg: 0.85, averageSizeCm: 50 },
   'Alpine Marmot': { averageWeightKg: 5.5, averageSizeCm: 60 },
   'Elk': { averageWeightKg: 325, averageSizeCm: 135 },
@@ -180,12 +183,11 @@ const MORPHOLOGY_FAUNA_SPECIES_DIMENSIONS: Record<string, FaunaMorphologySpecies
   'Mountain Lion': { averageWeightKg: 75, averageSizeCm: 125 },
   'Bison': { averageWeightKg: 650, averageSizeCm: 175 },
   'Black-footed Ferret': { averageWeightKg: 1.1, averageSizeCm: 50 },
-  'Burrowing Owl': { averageWeightKg: 0.2, averageSizeCm: 25 },
   'Hyena': { averageWeightKg: 60, averageSizeCm: 80 },
   'Lion': { averageWeightKg: 185, averageSizeCm: 110 },
   'Ornate Box Turtle': { averageWeightKg: 0.7, averageSizeCm: 12.5 },
   'Pipit': { averageWeightKg: 0.03, averageSizeCm: 16.5 },
-  'Plains Elephant': { averageWeightKg: 4500, averageSizeCm: 325 },
+  'Elephant': { averageWeightKg: 4500, averageSizeCm: 325 },
   'Quail': { averageWeightKg: 0.175, averageSizeCm: 20 },
   'Zebra': { averageWeightKg: 325, averageSizeCm: 135 },
   'Jerboa': { averageWeightKg: 0.065, averageSizeCm: 12.5 },

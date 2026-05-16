@@ -2,10 +2,57 @@ const express = require('express');
 const cors = require('cors');
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+function loadPresentableNameMaps() {
+  const mappingPath = path.resolve(process.cwd(), 'presentable_names.txt');
+  const rawToDisplay = new Map();
+  const displayToRaw = new Map();
+
+  try {
+    const lines = fs.readFileSync(mappingPath, 'utf8').split(/\r?\n/);
+    lines.forEach((line) => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine || !trimmedLine.includes(':')) {
+        return;
+      }
+
+      const [rawPart, displayPart] = trimmedLine.split(':');
+      const raw = String(rawPart || '').trim();
+      const display = String(displayPart || '').trim();
+      if (!raw || !display) {
+        return;
+      }
+
+      rawToDisplay.set(raw, display);
+      displayToRaw.set(display, raw);
+    });
+  } catch (error) {
+    console.warn(`Could not load presentable names from ${mappingPath}:`, error.message);
+  }
+
+  return { rawToDisplay, displayToRaw };
+}
+
+const { rawToDisplay: RAW_TO_DISPLAY, displayToRaw: DISPLAY_TO_RAW } = loadPresentableNameMaps();
+
+function toDisplayName(name) {
+  const normalized = String(name || '').trim();
+  return RAW_TO_DISPLAY.get(normalized) || normalized;
+}
+
+function toRawName(name) {
+  const normalized = String(name || '').trim();
+  if (RAW_TO_DISPLAY.has(normalized)) {
+    return normalized;
+  }
+
+  return DISPLAY_TO_RAW.get(normalized) || normalized;
+}
 
 const BIOME_CONFIG = {
   'temperate-forest': {
@@ -75,9 +122,9 @@ const BIOME_CONFIG = {
     labels: {
       flora: {
         trees: [],
-        plants: ['Buffalograss'],
+        plants: [],
       },
-      fauna: ['Bison', 'Black-footed Ferret', 'Burrowing Owl', 'Hyena', 'Lion', 'Ornate Box Turtle', 'Pipit', 'Plains Elephant', 'Quail', 'Zebra'],
+      fauna: ['Bison', 'Black-footed Ferret', 'Hyena', 'Lion', 'Ornate Box Turtle', 'Pipit', 'Elephant', 'Quail', 'Zebra'],
     },
   },
   'subtropical-desert': {
@@ -203,30 +250,35 @@ app.get('/api/labels', (req, res) => {
 
   const category = req.query.category === 'fauna' ? 'fauna' : 'flora';
   const labels = getCategoryLabels(biome, category);
+  const labelsRaw = labels.map((name) => toRawName(name));
   const floraGroups = category === 'flora' ? getFloraLabelGroups(biome) : null;
 
-  const placeholders = labels.map(() => '?').join(',');
-  const counts = db
-    .prepare(
-      `SELECT Name as name, COUNT(*) as count
-       FROM Observations
-       WHERE Name IN (${placeholders})
-       GROUP BY Name`
-    )
-    .all(...labels);
+  let countMap = {};
+  if (labelsRaw.length > 0) {
+    const placeholders = labelsRaw.map(() => '?').join(',');
+    const counts = db
+      .prepare(
+        `SELECT Name as name, COUNT(*) as count
+         FROM Observations
+         WHERE Name IN (${placeholders})
+         GROUP BY Name`
+      )
+      .all(...labelsRaw);
 
-  const countMap = Object.fromEntries(counts.map((row) => [row.name, row.count]));
+    countMap = Object.fromEntries(counts.map((row) => [row.name, row.count]));
+  }
+
 
   return res.json({
     labels: labels.map((name) => ({
-      name,
+      name: toDisplayName(name),
       group:
         category === 'fauna'
           ? 'fauna'
           : floraGroups?.trees.includes(name)
             ? 'trees'
             : 'plants',
-      count: countMap[name] || 0,
+      count: countMap[toRawName(name)] || 0,
     })),
   });
 });
@@ -244,14 +296,16 @@ app.get('/api/detections', (req, res) => {
 
   const category = req.query.category === 'fauna' ? 'fauna' : 'flora';
   const allowedLabels = getCategoryLabels(biome, category);
+  const allowedRawLabels = allowedLabels.map((name) => toRawName(name));
   const labelsParamProvided = req.query.labels !== undefined;
   const requestedLabels = String(req.query.labels || '')
     .split(',')
     .map((label) => label.trim())
     .filter(Boolean)
-    .filter((label) => allowedLabels.includes(label));
+    .map((label) => toRawName(label))
+    .filter((label) => allowedRawLabels.includes(label));
 
-  const activeLabels = labelsParamProvided ? requestedLabels : allowedLabels;
+  const activeLabels = labelsParamProvided ? requestedLabels : allowedRawLabels;
   const confidenceMin = Number(req.query.confidenceMin || 0);
 
   if (activeLabels.length === 0) {
@@ -322,7 +376,7 @@ app.get('/api/detections', (req, res) => {
       const percentY = invertY ? 100 - py : py;
       return {
         id: row.id,
-        name: row.name,
+        name: toDisplayName(row.name),
         timestamp: row.timestamp,
         x: Number(row.x),
         y: Number(row.y),
@@ -349,21 +403,23 @@ app.get('/api/stats', (req, res) => {
   }
 
   const floraGroups = getFloraLabelGroups(biome);
+  const treeRawLabels = floraGroups.trees.map((name) => toRawName(name));
+  const plantRawLabels = floraGroups.plants.map((name) => toRawName(name));
 
   const totals = db
     .prepare('SELECT COUNT(*) AS totalDetections FROM Observations')
     .get();
 
-  const treeCount = floraGroups.trees.length > 0
+  const treeCount = treeRawLabels.length > 0
     ? db
-        .prepare(`SELECT COUNT(*) AS totalTrees FROM Observations WHERE Name IN (${floraGroups.trees.map(() => '?').join(',')})`)
-        .get(...floraGroups.trees)
+        .prepare(`SELECT COUNT(*) AS totalTrees FROM Observations WHERE Name IN (${treeRawLabels.map(() => '?').join(',')})`)
+        .get(...treeRawLabels)
     : { totalTrees: 0 };
 
-  const plantCount = floraGroups.plants.length > 0
+  const plantCount = plantRawLabels.length > 0
     ? db
-        .prepare(`SELECT COUNT(*) AS totalPlants FROM Observations WHERE Name IN (${floraGroups.plants.map(() => '?').join(',')})`)
-        .get(...floraGroups.plants)
+        .prepare(`SELECT COUNT(*) AS totalPlants FROM Observations WHERE Name IN (${plantRawLabels.map(() => '?').join(',')})`)
+        .get(...plantRawLabels)
     : { totalPlants: 0 };
 
   return res.json({

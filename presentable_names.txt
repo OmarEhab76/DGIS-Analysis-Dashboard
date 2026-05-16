@@ -1,0 +1,72 @@
+Beaver : Beaver
+BrichTree : Birch Tree
+Lynx : Lynx
+Marten : Marten
+Squirrel : Squirrel
+Warbler : Warbler
+Woodpecker : Woodpecker
+AbandonedCar : Abandoned Car
+Bicycle : Bicycle
+CalicoCat : Calico Cat
+Coyote : Coyote
+Crow : Crow
+FeralDog : Feral Dog
+Pigeon : Pigeon
+Rat : Rat
+Skeleton : Skeleton
+Agave : Agave
+DesertBighornSheep : Desert Bighorn Sheep
+Tortoise : Tortoise
+DesertWillow : Desert Willow
+DorcasGazelle : Dorcas Gazelle
+Pelican : Pelican
+RattleSnake : Rattlesnake
+SeaBird : Seabird
+AlpineMarmot : Alpine Marmot
+Elk : Elk
+GoldenEagle : Golden Eagle
+GrizzlyBear : Grizzly Bear
+Heather : Heather
+MountainLion : Mountain Lion
+Bison : Bison
+Black-footedFerret : Black-footed Ferret
+Hyena : Hyena
+Lion : Lion
+TurtleOrnateBox : Ornate Box Turtle
+Pipit : Pipit
+Elephant : Elephant
+Quail : Quail
+Zebra : Zebra
+BigSnake : Big Snake
+CacaoTree : Cacao Tree
+Capybara : Capybara
+Gorilla : Gorilla
+GreenAnaconda : Green Anaconda
+GreenIguana : Green Iguana
+Leopard : Leopard
+Okapi : Okapi
+Pangolin : Pangolin
+PygmyChimpanzee : Pygmy Chimpanzee
+Sloth : Sloth
+AloeVeraPlant : Aloe Vera Plant
+DesertScorpion : Desert Scorpion
+DromedaryCamel : Dromedary Camel
+FennecFox : Fennec Fox
+Gecko : Gecko
+HornedLizard : Horned Lizard
+Jerboa : Jerboa
+SalviaPlant : Salvia Plant
+AmericanBlackBear : American Black Bear
+Hickory : Hickory
+Maple : Maple
+Raccoon : Raccoon
+RedFox : Red Fox
+White-tailedDeer : White-tailed Deer
+WoodFrog : Wood Frog
+Cypress : Cypress
+Cactus : Cactus
+PricklyPearCactus : Prickly Pear Cactus
+FlowerGazania : Gazania Flower
+FlowerEmpodium : Empodium Flower
+Conifer : Conifer
+PineTree : Pine Tree

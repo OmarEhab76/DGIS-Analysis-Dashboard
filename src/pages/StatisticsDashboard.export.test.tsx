@@ -413,7 +413,7 @@ describe('StatisticsDashboard export behavior', () => {
       },
       {
         id: 8,
-        name: 'Buffalograss',
+        name: 'Birch Tree',
         timestamp: '2026-01-01T07:00:00.000Z',
         x: 1,
         y: 2,
