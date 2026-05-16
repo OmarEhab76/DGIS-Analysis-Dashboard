@@ -788,15 +788,15 @@ const MapView = ({
             style={hoveredPopupStyle}
             onPointerDown={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
-              className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-red-600 text-white hover:bg-red-500"
-              onClick={() => setHoveredDetection(null)}
-              aria-label="Close detection popup"
-            >
-              <X className="h-3 w-3" />
-            </button>
             <div className="relative w-full h-24 rounded-lg bg-secondary mb-2 flex items-center justify-center overflow-hidden">
+              <button
+                type="button"
+                className="absolute right-1.5 top-1.5 z-20 grid h-5 w-5 place-items-center rounded-full bg-red-600 text-white hover:bg-red-500"
+                onClick={() => setHoveredDetection(null)}
+                aria-label="Close detection popup"
+              >
+                <X className="h-3 w-3" />
+              </button>
               {observationImagesLoading && (
                 <span className="text-xs text-muted-foreground">Loading photos...</span>
               )}
@@ -807,7 +807,7 @@ const MapView = ({
                 <img
                   src={activeObservationImage.url}
                   alt={`${hoveredDetection.name} observation`}
-                  className="h-full w-full object-cover"
+                  className="relative z-0 h-full w-full object-cover"
                 />
               )}
               {!observationImagesLoading && !observationImagesError && !activeObservationImage && (
