@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { BiomeId, DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
 import { getLabelColorValue, getLabelMarkerStyle, getLabelStyle } from '@/lib/labelColors';
 import { getObservationImages, ObservationImage } from '@/lib/dashboardApi';
-import { Plus, Minus, Locate, X } from 'lucide-react';
+import { Plus, Minus, Locate, X, Maximize2 } from 'lucide-react';
 import StatsCards from '@/components/dashboard/StatsCards';
 
 interface MapProfile {
@@ -125,6 +125,7 @@ const MapView = ({
   const [observationImagesLoading, setObservationImagesLoading] = useState(false);
   const [observationImagesError, setObservationImagesError] = useState<string | null>(null);
   const [observationImageIndex, setObservationImageIndex] = useState(0);
+  const [isObservationGalleryOpen, setIsObservationGalleryOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -503,6 +504,7 @@ const MapView = ({
       setObservationImagesLoading(false);
       setObservationImagesError(null);
       setObservationImageIndex(0);
+      setIsObservationGalleryOpen(false);
       return;
     }
 
@@ -561,6 +563,18 @@ const MapView = ({
       return (currentIndex + 1) % observationImages.length;
     });
   }, [observationImages.length]);
+
+  const openObservationGallery = useCallback(() => {
+    if (observationImages.length === 0) {
+      return;
+    }
+
+    setIsObservationGalleryOpen(true);
+  }, [observationImages.length]);
+
+  const closeObservationGallery = useCallback(() => {
+    setIsObservationGalleryOpen(false);
+  }, []);
 
   const hoveredPopupStyle = useMemo(() => {
     if (!hoveredDetection) {
@@ -789,6 +803,17 @@ const MapView = ({
             onPointerDown={(event) => event.stopPropagation()}
           >
             <div className="relative w-full h-24 rounded-lg bg-secondary mb-2 flex items-center justify-center overflow-hidden">
+              {!observationImagesLoading && !observationImagesError && (
+                <button
+                  type="button"
+                  className="absolute left-1.5 top-1.5 z-20 grid h-5 w-5 place-items-center rounded bg-black/55 text-white hover:bg-black/70 disabled:cursor-not-allowed disabled:opacity-55"
+                  onClick={openObservationGallery}
+                  disabled={observationImages.length === 0}
+                  aria-label="Open full photo view"
+                >
+                  <Maximize2 className="h-3 w-3" />
+                </button>
+              )}
               <button
                 type="button"
                 className="absolute right-1.5 top-1.5 z-20 grid h-5 w-5 place-items-center rounded-full bg-red-600 text-white hover:bg-red-500"
@@ -859,6 +884,87 @@ const MapView = ({
               ))}
             </div>
           </div>
+      )}
+
+      {isObservationGalleryOpen && hoveredDetection && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm p-4 md:p-6"
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeObservationGallery();
+            }
+          }}
+        >
+          <div className="mx-auto flex h-full w-full max-w-6xl flex-col rounded-xl border border-white/20 bg-card/95 p-4 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">{hoveredDetection.name} Photos</p>
+                <p className="text-xs text-muted-foreground">
+                  {observationImageIndex + 1} / {observationImages.length}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="grid h-8 w-8 place-items-center rounded-full bg-red-600 text-white hover:bg-red-500"
+                onClick={closeObservationGallery}
+                aria-label="Close full photo view"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="relative mb-3 min-h-0 flex-1 rounded-lg bg-black/70">
+              {activeObservationImage ? (
+                <img
+                  src={activeObservationImage.url}
+                  alt={`${hoveredDetection.name} full observation`}
+                  className="h-full w-full rounded-lg object-contain"
+                />
+              ) : (
+                <div className="grid h-full place-items-center text-sm text-muted-foreground">No photo available</div>
+              )}
+
+              {observationImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-xl text-white hover:bg-black/80"
+                    onClick={showPreviousObservationImage}
+                    aria-label="Show previous observation photo"
+                  >
+                    {'<'}
+                  </button>
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-xl text-white hover:bg-black/80"
+                    onClick={showNextObservationImage}
+                    aria-label="Show next observation photo"
+                  >
+                    {'>'}
+                  </button>
+                </>
+              )}
+            </div>
+
+            {observationImages.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {observationImages.map((image, index) => (
+                  <button
+                    key={image.id}
+                    type="button"
+                    className={`h-16 w-24 shrink-0 overflow-hidden rounded border transition-colors ${
+                      index === observationImageIndex ? 'border-primary' : 'border-border hover:border-white/50'
+                    }`}
+                    onClick={() => setObservationImageIndex(index)}
+                    aria-label={`Open observation photo ${index + 1}`}
+                  >
+                    <img src={image.url} alt={`${hoveredDetection.name} thumbnail ${index + 1}`} className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {!hoveredDetection && hoveredBubble && hoveredBubblePopupStyle && (
