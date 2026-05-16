@@ -37,6 +37,7 @@ export interface Detection {
   x: number;
   y: number;
   z: number;
+  type: string | null;
   confidence: number;
   droneId: number;
   percentX: number;

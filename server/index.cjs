@@ -300,6 +300,7 @@ app.get('/api/detections', (req, res) => {
          X AS x,
          Y AS y,
          Z AS z,
+         Type AS type,
          Confidence_Level AS confidence,
          Drone_ID AS droneId
        FROM Observations
@@ -326,6 +327,7 @@ app.get('/api/detections', (req, res) => {
         x: Number(row.x),
         y: Number(row.y),
         z: Number(row.z ?? 0),
+        type: row.type || null,
         confidence: Number(row.confidence),
         droneId: Number(row.droneId),
         percentX: Math.max(0, Math.min(100, px)),
@@ -372,6 +374,69 @@ app.get('/api/stats', (req, res) => {
       areaScanned: 2.4,
     },
   });
+});
+
+app.get('/api/observations/:id/image', (req, res) => {
+  const biome = resolveBiome(req.query.biome);
+  if (!biome) {
+    return res.status(400).json({ error: `Unsupported biome: ${String(req.query.biome || '')}` });
+  }
+
+  const { db } = getDbForBiome(biome);
+  if (!db) {
+    return res.status(500).json({ error: `Database is not available for ${biome}` });
+  }
+
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'Invalid observation ID' });
+  }
+
+  try {
+    const row = db.prepare('SELECT Image FROM Observation_Images WHERE Observation_ID = ?').get(id);
+
+    if (!row || !row.Image) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    res.set('Content-Type', 'image/jpeg');
+    res.send(row.Image);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch image', details: error.message });
+  }
+});
+
+app.get('/api/drones/status', (req, res) => {
+  const biome = resolveBiome(req.query.biome);
+  if (!biome) {
+    return res.status(400).json({ error: `Unsupported biome: ${String(req.query.biome || '')}` });
+  }
+
+  const { db } = getDbForBiome(biome);
+  if (!db) {
+    return res.status(500).json({ error: `Database not available for ${biome}` });
+  }
+
+  try {
+    const rows = db.prepare(`
+      SELECT
+        ID as id,
+        Drone_ID as droneId,
+        X as x,
+        Y as y,
+        Z as z,
+        Speed as speed,
+        Timestamp as timestamp
+      FROM Drone_Status
+      GROUP BY Drone_ID
+      HAVING Timestamp = MAX(Timestamp)
+      ORDER BY Drone_ID
+    `).all();
+    
+    return res.json({ statuses: rows });
+  } catch (err) {
+    return res.status(500).json({ error: 'Could not fetch drone status', details: err.message });
+  }
 });
 
 app.use((error, _req, res, _next) => {
