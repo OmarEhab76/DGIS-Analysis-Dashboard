@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { BiomeId, DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
 import { getLabelColorValue, getLabelMarkerStyle, getLabelStyle } from '@/lib/labelColors';
-import { Plus, Minus, Locate } from 'lucide-react';
+import { Plus, Minus, Locate, X } from 'lucide-react';
 import StatsCards from '@/components/dashboard/StatsCards';
 
 interface MapProfile {
@@ -350,6 +350,11 @@ const MapView = ({
     setHoveredBubble(null);
   }, [clearBubbleHoverTimer]);
 
+  const handleDetectionClick = useCallback((event: React.MouseEvent<HTMLDivElement>, detection: Detection) => {
+    event.stopPropagation();
+    setHoveredDetection(detection);
+  }, []);
+
   const labelScope = useMemo(() => {
     const fallback =
       activeTab === 'flora'
@@ -599,8 +604,8 @@ const MapView = ({
                     transform: 'translate(-50%, -50%)',
                     ...getLabelMarkerStyle(d.name, labelScope),
                   }}
-                  onMouseEnter={() => setHoveredDetection(d)}
-                  onMouseLeave={() => setHoveredDetection(null)}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => handleDetectionClick(event, d)}
                 />
               ))}
           </div>
@@ -673,8 +678,8 @@ const MapView = ({
                 transform: 'translate(-50%, -50%)',
                 ...getLabelMarkerStyle(d.name, labelScope),
               }}
-              onMouseEnter={() => setHoveredDetection(d)}
-              onMouseLeave={() => setHoveredDetection(null)}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => handleDetectionClick(event, d)}
             />
           ))}
       </div>
@@ -709,9 +714,18 @@ const MapView = ({
       {/* Popup */}
       {hoveredDetection && hoveredPopupStyle && (
           <div
-            className="absolute z-20 w-52 bg-card/90 backdrop-blur-md rounded-xl border border-border p-3 shadow-lg pointer-events-none"
+            className="absolute z-20 w-52 bg-card/90 backdrop-blur-md rounded-xl border border-border p-3 shadow-lg pointer-events-auto"
             style={hoveredPopupStyle}
+            onPointerDown={(event) => event.stopPropagation()}
           >
+            <button
+              type="button"
+              className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-red-600 text-white hover:bg-red-500"
+              onClick={() => setHoveredDetection(null)}
+              aria-label="Close detection popup"
+            >
+              <X className="h-3 w-3" />
+            </button>
             <div className="w-full h-24 rounded-lg bg-secondary mb-2 flex items-center justify-center overflow-hidden">
               <span className="text-3xl">🌿</span>
             </div>
