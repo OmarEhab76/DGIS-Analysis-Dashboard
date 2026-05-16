@@ -1,4 +1,4 @@
-import { DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
+import { BiomeId, DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
 
 interface DetectionsQuery {
   category: DashboardTab;
@@ -9,8 +9,13 @@ interface DetectionsQuery {
   dateTo?: string;
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+export interface ObservationImage {
+  id: number;
+  url: string;
+}
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
   }
@@ -58,4 +63,12 @@ export function getStats(biome?: string) {
   const suffix = search.toString();
   const url = suffix.length > 0 ? `/api/stats?${suffix}` : '/api/stats';
   return fetchJson<{ stats: DashboardStats }>(url).then((data) => data.stats);
+}
+
+export function getObservationImages(observationId: number, biome: BiomeId, signal?: AbortSignal) {
+  const search = new URLSearchParams({ biome });
+  return fetchJson<{ images: ObservationImage[] }>(
+    `/api/observations/${observationId}/images?${search.toString()}`,
+    { signal }
+  ).then((data) => data.images);
 }

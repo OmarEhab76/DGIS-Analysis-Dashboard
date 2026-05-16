@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { BiomeId, DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
 import { getLabelColorValue, getLabelMarkerStyle, getLabelStyle } from '@/lib/labelColors';
+import { getObservationImages, ObservationImage } from '@/lib/dashboardApi';
 import { Plus, Minus, Locate, X } from 'lucide-react';
 import StatsCards from '@/components/dashboard/StatsCards';
 
@@ -120,6 +121,10 @@ const MapView = ({
   const bubbleHoverTimerRef = useRef<number | null>(null);
   const [hoveredDetection, setHoveredDetection] = useState<Detection | null>(null);
   const [hoveredBubble, setHoveredBubble] = useState<HoveredBubbleState | null>(null);
+  const [observationImages, setObservationImages] = useState<ObservationImage[]>([]);
+  const [observationImagesLoading, setObservationImagesLoading] = useState(false);
+  const [observationImagesError, setObservationImagesError] = useState<string | null>(null);
+  const [observationImageIndex, setObservationImageIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -492,6 +497,71 @@ const MapView = ({
     }
   }, [faunaDensityBubbles, hoveredBubble]);
 
+  useEffect(() => {
+    if (!hoveredDetection) {
+      setObservationImages([]);
+      setObservationImagesLoading(false);
+      setObservationImagesError(null);
+      setObservationImageIndex(0);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    setObservationImages([]);
+    setObservationImagesLoading(true);
+    setObservationImagesError(null);
+    setObservationImageIndex(0);
+
+    getObservationImages(hoveredDetection.id, selectedBiome, controller.signal)
+      .then((images) => {
+        if (cancelled) {
+          return;
+        }
+        setObservationImages(images);
+      })
+      .catch((error: Error) => {
+        if (cancelled || error?.name === 'AbortError') {
+          return;
+        }
+        setObservationImagesError('Could not load photos for this observation.');
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setObservationImagesLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [hoveredDetection, selectedBiome]);
+
+  const hasObservationImages = observationImages.length > 0;
+  const activeObservationImage = hasObservationImages
+    ? observationImages[observationImageIndex % observationImages.length]
+    : null;
+
+  const showPreviousObservationImage = useCallback(() => {
+    setObservationImageIndex((currentIndex) => {
+      if (observationImages.length === 0) {
+        return 0;
+      }
+      return (currentIndex - 1 + observationImages.length) % observationImages.length;
+    });
+  }, [observationImages.length]);
+
+  const showNextObservationImage = useCallback(() => {
+    setObservationImageIndex((currentIndex) => {
+      if (observationImages.length === 0) {
+        return 0;
+      }
+      return (currentIndex + 1) % observationImages.length;
+    });
+  }, [observationImages.length]);
+
   const hoveredPopupStyle = useMemo(() => {
     if (!hoveredDetection) {
       return null;
@@ -726,8 +796,47 @@ const MapView = ({
             >
               <X className="h-3 w-3" />
             </button>
-            <div className="w-full h-24 rounded-lg bg-secondary mb-2 flex items-center justify-center overflow-hidden">
-              <span className="text-3xl">🌿</span>
+            <div className="relative w-full h-24 rounded-lg bg-secondary mb-2 flex items-center justify-center overflow-hidden">
+              {observationImagesLoading && (
+                <span className="text-xs text-muted-foreground">Loading photos...</span>
+              )}
+              {!observationImagesLoading && observationImagesError && (
+                <span className="text-xs text-destructive text-center px-2">{observationImagesError}</span>
+              )}
+              {!observationImagesLoading && !observationImagesError && activeObservationImage && (
+                <img
+                  src={activeObservationImage.url}
+                  alt={`${hoveredDetection.name} observation`}
+                  className="h-full w-full object-cover"
+                />
+              )}
+              {!observationImagesLoading && !observationImagesError && !activeObservationImage && (
+                <span className="text-xs text-muted-foreground">No photo for this observation</span>
+              )}
+
+              {!observationImagesLoading && !observationImagesError && observationImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="absolute left-1 top-1/2 -translate-y-1/2 grid h-6 w-6 place-items-center rounded-full bg-black/55 text-white hover:bg-black/70"
+                    onClick={showPreviousObservationImage}
+                    aria-label="Show previous observation photo"
+                  >
+                    {'<'}
+                  </button>
+                  <button
+                    type="button"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 grid h-6 w-6 place-items-center rounded-full bg-black/55 text-white hover:bg-black/70"
+                    onClick={showNextObservationImage}
+                    aria-label="Show next observation photo"
+                  >
+                    {'>'}
+                  </button>
+                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/55 px-1.5 py-0.5 text-[10px] text-white">
+                    {observationImageIndex + 1}/{observationImages.length}
+                  </div>
+                </>
+              )}
             </div>
             <p className="font-semibold text-foreground text-sm mb-2">{hoveredDetection.name}</p>
             <div className="flex items-center justify-between mb-3">
@@ -838,3 +947,4 @@ const MapView = ({
 };
 
 export default MapView;
+

@@ -220,6 +220,60 @@ function normalize(value, min, max) {
   return ((value - min) / (max - min)) * 100;
 }
 
+function detectImageMime(imageBuffer) {
+  if (!imageBuffer || imageBuffer.length < 4) {
+    return 'application/octet-stream';
+  }
+
+  // JPEG
+  if (imageBuffer[0] === 0xff && imageBuffer[1] === 0xd8 && imageBuffer[2] === 0xff) {
+    return 'image/jpeg';
+  }
+
+  // PNG
+  if (
+    imageBuffer.length >= 8 &&
+    imageBuffer[0] === 0x89 &&
+    imageBuffer[1] === 0x50 &&
+    imageBuffer[2] === 0x4e &&
+    imageBuffer[3] === 0x47 &&
+    imageBuffer[4] === 0x0d &&
+    imageBuffer[5] === 0x0a &&
+    imageBuffer[6] === 0x1a &&
+    imageBuffer[7] === 0x0a
+  ) {
+    return 'image/png';
+  }
+
+  // GIF
+  if (
+    imageBuffer.length >= 6 &&
+    imageBuffer[0] === 0x47 &&
+    imageBuffer[1] === 0x49 &&
+    imageBuffer[2] === 0x46 &&
+    imageBuffer[3] === 0x38
+  ) {
+    return 'image/gif';
+  }
+
+  // WEBP (RIFF....WEBP)
+  if (
+    imageBuffer.length >= 12 &&
+    imageBuffer[0] === 0x52 &&
+    imageBuffer[1] === 0x49 &&
+    imageBuffer[2] === 0x46 &&
+    imageBuffer[3] === 0x46 &&
+    imageBuffer[8] === 0x57 &&
+    imageBuffer[9] === 0x45 &&
+    imageBuffer[10] === 0x42 &&
+    imageBuffer[11] === 0x50
+  ) {
+    return 'image/webp';
+  }
+
+  return 'application/octet-stream';
+}
+
 app.get('/api/health', (_req, res) => {
   const databaseStatus = Object.keys(BIOME_CONFIG).map((biome) => {
     const { db, error, dbPath } = getDbForBiome(biome);
@@ -449,14 +503,97 @@ app.get('/api/observations/:id/image', (req, res) => {
   }
 
   try {
-    const row = db.prepare('SELECT Image FROM Observation_Images WHERE Observation_ID = ?').get(id);
+    const row = db
+      .prepare(
+        `SELECT Image
+         FROM Observation_Images
+         WHERE Observation_ID = ? AND Image IS NOT NULL
+         ORDER BY ID ASC
+         LIMIT 1`
+      )
+      .get(id);
 
     if (!row || !row.Image) {
       return res.status(404).json({ error: 'Image not found' });
     }
 
-    res.set('Content-Type', 'image/jpeg');
+    res.set('Content-Type', detectImageMime(row.Image));
     res.send(row.Image);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch image', details: error.message });
+  }
+});
+
+app.get('/api/observations/:id/images', (req, res) => {
+  const biome = resolveBiome(req.query.biome);
+  if (!biome) {
+    return res.status(400).json({ error: `Unsupported biome: ${String(req.query.biome || '')}` });
+  }
+
+  const { db } = getDbForBiome(biome);
+  if (!db) {
+    return res.status(500).json({ error: `Database is not available for ${biome}` });
+  }
+
+  const observationId = Number(req.params.id);
+  if (Number.isNaN(observationId)) {
+    return res.status(400).json({ error: 'Invalid observation ID' });
+  }
+
+  try {
+    const rows = db
+      .prepare(
+        `SELECT ID AS id
+         FROM Observation_Images
+         WHERE Observation_ID = ? AND Image IS NOT NULL
+         ORDER BY ID ASC`
+      )
+      .all(observationId);
+
+    const biomeQuery = encodeURIComponent(biome);
+    return res.json({
+      images: rows.map((row) => ({
+        id: Number(row.id),
+        url: `/api/observations/${observationId}/images/${Number(row.id)}?biome=${biomeQuery}`,
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch observation images', details: error.message });
+  }
+});
+
+app.get('/api/observations/:id/images/:imageId', (req, res) => {
+  const biome = resolveBiome(req.query.biome);
+  if (!biome) {
+    return res.status(400).json({ error: `Unsupported biome: ${String(req.query.biome || '')}` });
+  }
+
+  const { db } = getDbForBiome(biome);
+  if (!db) {
+    return res.status(500).json({ error: `Database is not available for ${biome}` });
+  }
+
+  const observationId = Number(req.params.id);
+  const imageId = Number(req.params.imageId);
+  if (Number.isNaN(observationId) || Number.isNaN(imageId)) {
+    return res.status(400).json({ error: 'Invalid observation or image ID' });
+  }
+
+  try {
+    const row = db
+      .prepare(
+        `SELECT Image
+         FROM Observation_Images
+         WHERE Observation_ID = ? AND ID = ?`
+      )
+      .get(observationId, imageId);
+
+    if (!row || !row.Image) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    res.set('Content-Type', detectImageMime(row.Image));
+    return res.send(row.Image);
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch image', details: error.message });
   }
