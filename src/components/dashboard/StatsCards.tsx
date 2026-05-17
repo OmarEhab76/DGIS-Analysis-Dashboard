@@ -5,11 +5,21 @@ interface StatsCardsProps {
   activeTab: DashboardTab;
   stats?: DashboardStats;
   totalAnimals?: number;
+  hasTreeLabels?: boolean;
+  hasPlantLabels?: boolean;
   isLoading?: boolean;
   hasLiveData?: boolean;
 }
 
-const StatsCards = ({ activeTab, stats, totalAnimals = 0, isLoading = false, hasLiveData = true }: StatsCardsProps) => {
+const StatsCards = ({
+  activeTab,
+  stats,
+  totalAnimals = 0,
+  hasTreeLabels = true,
+  hasPlantLabels = true,
+  isLoading = false,
+  hasLiveData = true,
+}: StatsCardsProps) => {
   const showNoData = !isLoading && !hasLiveData;
 
   const detectionCard = {
@@ -43,13 +53,13 @@ const StatsCards = ({ activeTab, stats, totalAnimals = 0, isLoading = false, has
           detectionCard,
           {
             label: 'Total Trees',
-            value: showNoData ? '--' : stats ? stats.totalTrees.toLocaleString() : '--',
+            value: showNoData ? '--' : !hasTreeLabels ? '--' : stats ? stats.totalTrees.toLocaleString() : '--',
             iconSrc: '/icons/Total Trees.svg',
             color: 'text-primary',
           },
           {
             label: 'Total Plants',
-            value: showNoData ? '--' : stats ? stats.totalPlants.toLocaleString() : '0',
+            value: showNoData ? '--' : !hasPlantLabels ? '--' : stats ? stats.totalPlants.toLocaleString() : '--',
             iconSrc: '/icons/Total Plants.svg',
             color: 'text-primary',
           },

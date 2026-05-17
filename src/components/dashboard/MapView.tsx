@@ -550,6 +550,8 @@ const MapView = ({
     () => labels.filter((label) => label.group === 'fauna').reduce((sum, label) => sum + label.count, 0),
     [labels]
   );
+  const hasTreeLabels = useMemo(() => labels.some((label) => label.group === 'trees'), [labels]);
+  const hasPlantLabels = useMemo(() => labels.some((label) => label.group === 'plants'), [labels]);
 
   useEffect(() => {
     if (hoveredDetection) {
@@ -789,6 +791,8 @@ const MapView = ({
             activeTab={activeTab}
             stats={stats}
             totalAnimals={totalAnimals}
+            hasTreeLabels={hasTreeLabels}
+            hasPlantLabels={hasPlantLabels}
             isLoading={isLoadingStats}
             hasLiveData={hasLiveData}
           />
