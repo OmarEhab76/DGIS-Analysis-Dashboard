@@ -7,6 +7,7 @@ const CSV_COLUMNS: Array<keyof Detection> = [
   'x',
   'y',
   'z',
+  'type',
   'confidence',
   'droneId',
   'percentX',

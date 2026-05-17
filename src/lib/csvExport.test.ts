@@ -10,6 +10,7 @@ const sampleDetections: Detection[] = [
     x: 10,
     y: 20,
     z: 30,
+    type: 'Tree',
     confidence: 95,
     droneId: 7,
     percentX: 12.5,
@@ -22,6 +23,7 @@ const sampleDetections: Detection[] = [
     x: 11,
     y: 21,
     z: 31,
+    type: null,
     confidence: 84,
     droneId: 8,
     percentX: 13.5,
@@ -34,8 +36,8 @@ describe('csvExport', () => {
     const csv = buildDetectionsCsv(sampleDetections);
     const lines = csv.split('\r\n');
 
-    expect(lines[0]).toBe('id,name,timestamp,x,y,z,confidence,droneId,percentX,percentY');
-    expect(lines[1]).toBe('1,Maple,2026-04-10T11:22:33Z,10,20,30,95,7,12.5,55.5');
+    expect(lines[0]).toBe('id,name,timestamp,x,y,z,type,confidence,droneId,percentX,percentY');
+    expect(lines[1]).toBe('1,Maple,2026-04-10T11:22:33Z,10,20,30,Tree,95,7,12.5,55.5');
   });
 
   it('escapes commas and quotes in CSV fields', () => {
