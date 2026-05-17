@@ -10,8 +10,6 @@ const CSV_COLUMNS: Array<keyof Detection> = [
   'type',
   'confidence',
   'droneId',
-  'percentX',
-  'percentY',
 ];
 
 function escapeCsvCell(value: string | number): string {

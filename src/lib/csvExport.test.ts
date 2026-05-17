@@ -36,8 +36,8 @@ describe('csvExport', () => {
     const csv = buildDetectionsCsv(sampleDetections);
     const lines = csv.split('\r\n');
 
-    expect(lines[0]).toBe('id,name,timestamp,x,y,z,type,confidence,droneId,percentX,percentY');
-    expect(lines[1]).toBe('1,Maple,2026-04-10T11:22:33Z,10,20,30,Tree,95,7,12.5,55.5');
+    expect(lines[0]).toBe('id,name,timestamp,x,y,z,type,confidence,droneId');
+    expect(lines[1]).toBe('1,Maple,2026-04-10T11:22:33Z,10,20,30,Tree,95,7');
   });
 
   it('escapes commas and quotes in CSV fields', () => {

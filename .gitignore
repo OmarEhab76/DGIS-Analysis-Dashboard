@@ -25,3 +25,12 @@ dist-ssr
 
 # Temp
 vite.config.ts.timestamp-1776973102614-ff4ef0daf0bab.mjs
+
+# Databases
+DGIS_Boreal.db
+DGIS_Mountain.db
+DGIS_Plains.db
+DGIS_Plains.db-shm
+DGIS_Plains.db-wal
+DGIS_Subtropical.db
+DGIS.db
