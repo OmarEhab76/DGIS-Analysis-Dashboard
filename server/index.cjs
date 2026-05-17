@@ -87,7 +87,7 @@ const BIOME_CONFIG = {
     },
     labels: {
       flora: {
-        trees: ['Birch Tree', 'Conifer'],
+        trees: ['Conifer'],
         plants: [],
       },
       fauna: ['Beaver', 'Lynx', 'Marten', 'Squirrel', 'Warbler', 'Woodpecker'],
@@ -106,8 +106,8 @@ const BIOME_CONFIG = {
     },
     labels: {
       flora: {
-        trees: ['Conifer'],
-        plants: ['Edelweiss', 'Heather', 'Rhododendron'],
+        trees: ['Conifer', 'Pine Tree'],
+        plants: ['Heather'],
       },
       fauna: ['Alpine Marmot', 'Elk', 'Golden Eagle', 'Grizzly Bear', 'Mountain Lion'],
     },

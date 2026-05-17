@@ -19,15 +19,15 @@ export const BIOME_LABEL_CATALOG: Record<BiomeId, BiomeLabelCatalog> = {
   'boreal-forest': {
     fauna: ['Beaver', 'Lynx', 'Marten', 'Squirrel', 'Warbler', 'Woodpecker'],
     flora: {
-      trees: ['Birch Tree', 'Conifer'],
+      trees: ['Conifer'],
       plants: [],
     },
   },
   mountain: {
     fauna: ['Alpine Marmot', 'Elk', 'Golden Eagle', 'Grizzly Bear', 'Mountain Lion'],
     flora: {
-      trees: ['Conifer'],
-      plants: ['Edelweiss', 'Heather', 'Rhododendron'],
+      trees: ['Conifer', 'Pine Tree'],
+      plants: ['Heather'],
     },
   },
   plains: {
