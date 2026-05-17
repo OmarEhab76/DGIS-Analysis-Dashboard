@@ -57,6 +57,7 @@ function toRawName(name) {
 const BIOME_CONFIG = {
   'temperate-forest': {
     dbPath: process.env.DGIS_DB_PATH || path.resolve(process.cwd(), 'DGIS.db'),
+    areaScanned: 0.4350,
     mapProjection: {
       mode: 'fixed',
       minX: 0,
@@ -75,6 +76,7 @@ const BIOME_CONFIG = {
   },
   'boreal-forest': {
     dbPath: path.resolve(process.cwd(), 'DGIS_Boreal.db'),
+    areaScanned: 0.3433,
     mapProjection: {
       mode: 'fixed',
       minX: 0,
@@ -93,6 +95,7 @@ const BIOME_CONFIG = {
   },
   mountain: {
     dbPath: path.resolve(process.cwd(), 'DGIS_Mountain.db'),
+    areaScanned: 0.3178,
     mapProjection: {
       mode: 'fixed',
       minX: 0,
@@ -111,6 +114,7 @@ const BIOME_CONFIG = {
   },
   plains: {
     dbPath: path.resolve(process.cwd(), 'DGIS_Plains.db'),
+    areaScanned: 1,
     mapProjection: {
       mode: 'fixed',
       minX: 0,
@@ -129,6 +133,7 @@ const BIOME_CONFIG = {
   },
   'subtropical-desert': {
     dbPath: path.resolve(process.cwd(), 'DGIS_Subtropical.db'),
+    areaScanned: 0.3015,
     mapProjection: {
       mode: 'fixed',
       minX: 0,
@@ -450,6 +455,7 @@ app.get('/api/stats', (req, res) => {
   if (!biome) {
     return res.status(400).json({ error: `Unsupported biome: ${String(req.query.biome || '')}` });
   }
+  const biomeConfig = BIOME_CONFIG[biome];
 
   const { db, error, dbPath } = getDbForBiome(biome);
   if (!db) {
@@ -481,7 +487,7 @@ app.get('/api/stats', (req, res) => {
       totalDetections: Number(totals?.totalDetections ?? 0),
       totalTrees: Number(treeCount?.totalTrees ?? 0),
       totalPlants: Number(plantCount?.totalPlants ?? 0),
-      areaScanned: 2.4,
+      areaScanned: Number(biomeConfig?.areaScanned ?? BIOME_CONFIG[DEFAULT_BIOME].areaScanned ?? 0),
     },
   });
 });
