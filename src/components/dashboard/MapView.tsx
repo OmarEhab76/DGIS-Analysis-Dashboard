@@ -594,8 +594,8 @@ const MapView = ({
 
     const markerX = (hoveredDetection.percentX / 100) * mapProfile.width * zoom + pan.x;
     const markerY = (hoveredDetection.percentY / 100) * mapProfile.height * zoom + pan.y;
-    const popupWidth = 208;
-    const popupHeight = 220;
+    const popupWidth = 256;
+    const popupHeight = 272;
 
     const desiredLeft = markerX + (markerX > viewport.clientWidth * 0.6 ? -popupWidth - 12 : 12);
     const desiredTop = markerY + (markerY > viewport.clientHeight * 0.6 ? -popupHeight - 12 : 12);
@@ -798,11 +798,11 @@ const MapView = ({
       {/* Popup */}
       {hoveredDetection && hoveredPopupStyle && (
           <div
-            className="absolute z-20 w-52 bg-card/90 backdrop-blur-md rounded-xl border border-border p-3 shadow-lg pointer-events-auto"
+            className="absolute z-20 w-64 bg-card/90 backdrop-blur-md rounded-xl border border-border p-3 shadow-lg pointer-events-auto"
             style={hoveredPopupStyle}
             onPointerDown={(event) => event.stopPropagation()}
           >
-            <div className="relative w-full h-24 rounded-lg bg-secondary mb-2 flex items-center justify-center overflow-hidden">
+            <div className="relative w-full h-36 rounded-lg bg-secondary mb-2 flex items-center justify-center overflow-hidden">
               {!observationImagesLoading && !observationImagesError && (
                 <button
                   type="button"
@@ -832,7 +832,7 @@ const MapView = ({
                 <img
                   src={activeObservationImage.url}
                   alt={`${hoveredDetection.name} observation`}
-                  className="relative z-0 h-full w-full object-cover"
+                  className="relative z-0 h-full w-full object-contain bg-black/35"
                 />
               )}
               {!observationImagesLoading && !observationImagesError && !activeObservationImage && (
