@@ -3,7 +3,6 @@ import { BiomeId, BiomeLabelCatalog, BiomeOption, DashboardLabel, DashboardStats
 export const BIOME_OPTIONS: BiomeOption[] = [
   { id: 'temperate-forest', label: 'Temperate Forest', hasDatabaseData: true },
   { id: 'boreal-forest', label: 'Boreal Forest', hasDatabaseData: true },
-  { id: 'coastal-desert', label: 'Coastal Desert', hasDatabaseData: false },
   { id: 'mountain', label: 'Mountain', hasDatabaseData: true },
   { id: 'plains', label: 'Plains', hasDatabaseData: true },
   { id: 'subtropical-desert', label: 'Subtropical Desert', hasDatabaseData: true },
@@ -22,13 +21,6 @@ export const BIOME_LABEL_CATALOG: Record<BiomeId, BiomeLabelCatalog> = {
     flora: {
       trees: ['Birch Tree', 'Conifer'],
       plants: [],
-    },
-  },
-  'coastal-desert': {
-    fauna: ['Desert Bighorn Sheep', 'Tortoise', 'Dorcas Gazelle', 'Pelican', 'Rattlesnake', 'Seabird'],
-    flora: {
-      trees: ['Desert Willow'],
-      plants: ['Agave', 'Cactus'],
     },
   },
   mountain: {

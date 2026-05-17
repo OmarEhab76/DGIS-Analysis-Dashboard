@@ -54,10 +54,6 @@ Biomes currently connected to live database-backed API data:
 - `plains` -> `DGIS_Plains.db`
 - `subtropical-desert` -> `DGIS_Subtropical.db`
 
-Biomes currently available as UI placeholders only (no live DB detections yet):
-
-- `coastal-desert`
-
 ## Run the Project (Recommended: npm)
 
 1. Clone and enter the repo:
@@ -134,8 +130,7 @@ After startup:
 1. `http://localhost:8080` loads the dashboard UI.
 2. `http://localhost:3001/api/health` returns `ok: true` when databases are accessible.
 3. `/api/health` reports all five live biomes as available: `temperate-forest`, `boreal-forest`, `mountain`, `plains`, and `subtropical-desert`.
-4. Switching to `coastal-desert` shows placeholder/no-live-data behavior (expected).
-5. `http://localhost:8080/statistics-dashboard` loads the statistics page.
+4. `http://localhost:8080/statistics-dashboard` loads the statistics page.
 
 ## Troubleshooting
 
@@ -146,7 +141,6 @@ After startup:
   - If using a custom temperate DB path, verify `DGIS_DB_PATH` points to a real file.
 - Frontend loads but no data:
   - Confirm API is running and `/api/health` succeeds.
-  - For `coastal-desert`, no live detections is expected (placeholder biome).
 
 ## Recent Project Changes
 

@@ -3,7 +3,6 @@ export type DashboardTab = 'flora' | 'fauna';
 export type BiomeId =
   | 'temperate-forest'
   | 'boreal-forest'
-  | 'coastal-desert'
   | 'mountain'
   | 'plains'
   | 'subtropical-desert';

@@ -62,7 +62,6 @@ const taxonomyMap: Record<string, string> = {
   // Fauna: Boreal Forest
   'Beaver': 'Mammals', 'Lynx': 'Mammals', 'Marten': 'Mammals', 'Squirrel': 'Mammals',
   'Warbler': 'Birds', 'Woodpecker': 'Birds',
-  // Fauna: Coastal Desert
   'Desert Bighorn Sheep': 'Mammals', 'Dorcas Gazelle': 'Mammals', 'Desert Gazelle': 'Mammals',
   'Pelican': 'Birds', 'Seabird': 'Birds', 'Seabird (avg)': 'Birds',
   'Tortoise': 'Reptiles', 'Desert Tortoise': 'Reptiles', 'Rattlesnake': 'Reptiles',
