@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { BiomeId, DashboardLabel, DashboardStats, DashboardTab, Detection } from '@/types/dashboard';
 import { getLabelColorValue, getLabelMarkerStyle, getLabelStyle } from '@/lib/labelColors';
 import { getObservationImages, ObservationImage } from '@/lib/dashboardApi';
-import { Plus, Minus, Locate, X, Maximize2 } from 'lucide-react';
+import { Plus, Minus, Locate, X, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
 import StatsCards from '@/components/dashboard/StatsCards';
 
 interface MapProfile {
@@ -847,7 +847,7 @@ const MapView = ({
                     onClick={showPreviousObservationImage}
                     aria-label="Show previous observation photo"
                   >
-                    {'<'}
+                    <ChevronLeft className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
@@ -855,7 +855,7 @@ const MapView = ({
                     onClick={showNextObservationImage}
                     aria-label="Show next observation photo"
                   >
-                    {'>'}
+                    <ChevronRight className="h-4 w-4" />
                   </button>
                   <div className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/55 px-1.5 py-0.5 text-[10px] text-white">
                     {observationImageIndex + 1}/{observationImages.length}
@@ -928,19 +928,19 @@ const MapView = ({
                 <>
                   <button
                     type="button"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-xl text-white hover:bg-black/80"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
                     onClick={showPreviousObservationImage}
                     aria-label="Show previous observation photo"
                   >
-                    {'<'}
+                    <ChevronLeft className="h-6 w-6" />
                   </button>
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-xl text-white hover:bg-black/80"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
                     onClick={showNextObservationImage}
                     aria-label="Show next observation photo"
                   >
-                    {'>'}
+                    <ChevronRight className="h-6 w-6" />
                   </button>
                 </>
               )}
