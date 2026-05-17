@@ -396,7 +396,7 @@ const MapView = ({
   const labelScope = useMemo(() => {
     const fallback =
       activeTab === 'flora'
-        ? ['Hickory', 'Maple']
+        ? ['Hickory', 'Maple', 'Pine Tree']
         : ['Wood Frog', 'White-tailed Deer', 'Red Fox', 'Raccoon', 'American Black Bear'];
     const names = Array.from(new Set([...labels.map((item) => item.name), ...detections.map((item) => item.name)]));
     return names.length > 0 ? names : fallback;
@@ -405,7 +405,7 @@ const MapView = ({
   const legendItems = useMemo(() => {
     const fallback =
       activeTab === 'flora'
-        ? ['Hickory', 'Maple']
+        ? ['Hickory', 'Maple', 'Pine Tree']
         : ['Wood Frog', 'White-tailed Deer', 'Red Fox', 'Raccoon', 'American Black Bear'];
     const detectionNames = Array.from(new Set(detections.map((item) => item.name)));
     const labelNames = Array.from(new Set(labels.map((item) => item.name)));

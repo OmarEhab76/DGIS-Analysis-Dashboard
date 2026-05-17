@@ -12,7 +12,7 @@ export const BIOME_LABEL_CATALOG: Record<BiomeId, BiomeLabelCatalog> = {
   'temperate-forest': {
     fauna: ['Wood Frog', 'White-tailed Deer', 'Red Fox', 'Raccoon', 'American Black Bear'],
     flora: {
-      trees: ['Hickory', 'Maple'],
+      trees: ['Hickory', 'Maple', 'Pine Tree'],
       plants: [],
     },
   },

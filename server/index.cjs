@@ -68,7 +68,7 @@ const BIOME_CONFIG = {
     },
     labels: {
       flora: {
-        trees: ['Hickory', 'Maple'],
+        trees: ['Hickory', 'Maple', 'Pine Tree'],
         plants: [],
       },
       fauna: ['Wood Frog', 'White-tailed Deer', 'Red Fox', 'Raccoon', 'American Black Bear'],
