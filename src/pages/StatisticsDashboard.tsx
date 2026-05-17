@@ -88,11 +88,11 @@ const taxonomyMap: Record<string, string> = {
   // Flora: Trees - Angiosperms (Broadleaf)
   'Birch Tree': 'Broadleaf Trees', 'Hickory': 'Broadleaf Trees', 'Maple': 'Broadleaf Trees',
   // Flora: Trees - Angiosperms (Desert/Tropical)
-  'Desert Willow': 'Desert / Tropical Trees', 'Date Palm': 'Desert / Tropical Trees',
+  'Desert Willow': 'Desert / Tropical Trees',
   // Flora: Shrubs & Herbs (Ground Plants)
   'Edelweiss': 'Herbs / Ground Plants', 'Heather': 'Herbs / Ground Plants', 'Rhododendron': 'Herbs / Ground Plants',
   // Flora: Succulents & Desert Plants
-  'Agave': 'Succulents & Desert Plants', 'Cactus': 'Succulents & Desert Plants', 'Aloe Vera Plant': 'Succulents & Desert Plants',
+  'Agave': 'Succulents & Desert Plants', 'Cactus': 'Succulents & Desert Plants', 'Prickly Pear Cactus': 'Succulents & Desert Plants', 'Aloe Vera Plant': 'Succulents & Desert Plants',
   // Flora: Flowering/Medicinal Plants
   'Salvia Plant': 'Flowering/Medicinal Plants',
 };
@@ -141,9 +141,13 @@ const MORPHOLOGY_FLORA_SPECIES_DIMENSIONS: Record<string, FloraMorphologySpecies
     averageHeight: 40,
     averageWidth: 10,
   },
-  'Date Palm': {
-    averageHeight: 20,
-    averageWidth: 6,
+  'Cactus': {
+    averageHeight: 3,
+    averageWidth: 1.5,
+  },
+  'Prickly Pear Cactus': {
+    averageHeight: 2,
+    averageWidth: 2.5,
   },
   'Maple': {
     averageHeight: 27.5,

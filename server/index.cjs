@@ -144,8 +144,8 @@ const BIOME_CONFIG = {
     },
     labels: {
       flora: {
-        trees: ['Date Palm'],
-        plants: ['Aloe Vera Plant', 'Salvia Plant'],
+        trees: [],
+        plants: ['Aloe Vera Plant', 'Salvia Plant', 'Cactus', 'Prickly Pear Cactus'],
       },
       fauna: ['Jerboa', 'Desert Scorpion', 'Fennec Fox', 'Dromedary Camel', 'Gecko', 'Horned Lizard'],
     },
