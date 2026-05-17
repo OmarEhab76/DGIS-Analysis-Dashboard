@@ -91,7 +91,7 @@ interface HoveredBubbleState {
   surfaceY: number;
 }
 
-const FAUNA_CLUSTER_AXIS_DISTANCE = 30;
+const FAUNA_CLUSTER_AXIS_DISTANCE = 50;
 const FAUNA_CLUSTER_MIN_POINTS = 5;
 const BUBBLE_AREA_PADDING_PERCENT = 1.4;
 const BUBBLE_AREA_MIN_SIZE_PERCENT = 4;

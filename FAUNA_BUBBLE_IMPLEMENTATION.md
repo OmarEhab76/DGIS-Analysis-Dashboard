@@ -5,8 +5,8 @@ Implement adaptive "many animals in area" bubbles on the dot-map dashboard for f
 
 - Create a bubble when `5+` detections of the **same label** are close.
 - "Close" means:
-  - `|x1 - x2| <= 30`
-  - `|z1 - z2| <= 30`
+  - `|x1 - x2| <= 50`
+  - `|z1 - z2| <= 50`
 - Bubble color must match the label color.
 - Bubbles must update automatically with active filters.
 - Hover behavior:
@@ -24,7 +24,7 @@ Added types and constants:
 
 - `FaunaDensityBubble`
 - `HoveredBubbleState`
-- `FAUNA_CLUSTER_AXIS_DISTANCE = 30`
+- `FAUNA_CLUSTER_AXIS_DISTANCE = 50`
 - `FAUNA_CLUSTER_MIN_POINTS = 5`
 - `BUBBLE_AREA_PADDING_PERCENT = 1.4`
 - `BUBBLE_AREA_MIN_SIZE_PERCENT = 4`
