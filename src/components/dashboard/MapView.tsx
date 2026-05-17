@@ -567,6 +567,12 @@ const MapView = ({
   }, [faunaDensityBubbles, hoveredBubble]);
 
   useEffect(() => {
+    clearBubbleHoverTimer();
+    setHoveredDetection(null);
+    setHoveredBubble(null);
+  }, [activeTab, clearBubbleHoverTimer, selectedBiome]);
+
+  useEffect(() => {
     if (!hoveredDetection) {
       setObservationImages([]);
       setObservationImagesLoading(false);
