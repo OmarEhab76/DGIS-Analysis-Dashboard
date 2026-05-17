@@ -3,7 +3,7 @@
 ## Goal
 Implement adaptive "many animals in area" bubbles on the dot-map dashboard for fauna detections, with strict hover behavior:
 
-- Create a bubble when `5+` detections of the **same label** are close.
+- Create a bubble when `3+` detections of the **same label** are close.
 - "Close" means:
   - `|x1 - x2| <= 70`
   - `|z1 - z2| <= 70`
@@ -25,7 +25,7 @@ Added types and constants:
 - `FaunaDensityBubble`
 - `HoveredBubbleState`
 - `FAUNA_CLUSTER_AXIS_DISTANCE = 70`
-- `FAUNA_CLUSTER_MIN_POINTS = 5`
+- `FAUNA_CLUSTER_MIN_POINTS = 3`
 - `BUBBLE_AREA_PADDING_PERCENT = 1.4`
 - `BUBBLE_AREA_MIN_SIZE_PERCENT = 4`
 - `BUBBLE_HOVER_DELAY_MS = 320`
@@ -76,12 +76,12 @@ How it works:
 - Runs only when:
   - `activeTab === 'fauna'`
   - data is not loading
-  - at least 5 detections exist
+  - at least 3 detections exist
 - Groups detections by `label`.
 - For each label group, builds connected components (BFS):
   - Two detections are connected if both axis constraints are satisfied:
     - `abs(dx) <= 30` and `abs(dz) <= 30`
-- Keeps components with `>= 5` detections.
+- Keeps components with `>= 3` detections.
 - Converts each component to a screen bubble:
   - Uses min/max `percentX` and `percentY` of points.
   - Adds padding and minimum visual size.

@@ -92,10 +92,40 @@ interface HoveredBubbleState {
 }
 
 const FAUNA_CLUSTER_AXIS_DISTANCE = 70;
-const FAUNA_CLUSTER_MIN_POINTS = 5;
+const FAUNA_CLUSTER_MIN_POINTS = 3;
 const BUBBLE_AREA_PADDING_PERCENT = 1.4;
 const BUBBLE_AREA_MIN_SIZE_PERCENT = 4;
 const BUBBLE_HOVER_DELAY_MS = 320;
+const MARKER_DIAMETER_PX = 12;
+const MARKER_GLOW_PADDING_PX = 4;
+const MARKER_PADDING_PERCENT_FALLBACK = 0.9;
+const BUBBLE_LIGHTNESS_MAX_PERCENT = 58;
+const BUBBLE_LIGHTNESS_MIN_PERCENT = 32;
+
+function getFaunaBubbleColorByCount(
+  label: string,
+  labelScope: string[],
+  count: number,
+  maxCount: number
+) {
+  const baseColor = getLabelColorValue(label, labelScope);
+  const hslMatch = baseColor.match(/^hsl\(([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\)$/);
+  if (!hslMatch) {
+    return baseColor;
+  }
+
+  const [, hue, saturation] = hslMatch;
+  const normalizedCount =
+    maxCount <= FAUNA_CLUSTER_MIN_POINTS
+      ? 0
+      : (count - FAUNA_CLUSTER_MIN_POINTS) / (maxCount - FAUNA_CLUSTER_MIN_POINTS);
+  const lightness =
+    BUBBLE_LIGHTNESS_MAX_PERCENT -
+    normalizedCount *
+      (BUBBLE_LIGHTNESS_MAX_PERCENT - BUBBLE_LIGHTNESS_MIN_PERCENT);
+
+  return `hsl(${hue} ${saturation}% ${lightness.toFixed(1)}%)`;
+}
 
 const MapView = ({
   activeTab,
@@ -439,10 +469,28 @@ const MapView = ({
         }
 
         const componentDetections = componentIndices.map((index) => labelDetections[index]);
-        const minPercentX = Math.min(...componentDetections.map((point) => point.percentX));
-        const maxPercentX = Math.max(...componentDetections.map((point) => point.percentX));
-        const minPercentY = Math.min(...componentDetections.map((point) => point.percentY));
-        const maxPercentY = Math.max(...componentDetections.map((point) => point.percentY));
+        const markerVisualRadiusXPercent = mapProfile
+          ? ((MARKER_DIAMETER_PX / 2 + MARKER_GLOW_PADDING_PX) / mapProfile.width) * 100
+          : MARKER_PADDING_PERCENT_FALLBACK;
+        const markerVisualRadiusYPercent = mapProfile
+          ? ((MARKER_DIAMETER_PX / 2 + MARKER_GLOW_PADDING_PX) / mapProfile.height) * 100
+          : MARKER_PADDING_PERCENT_FALLBACK;
+        const minPercentX = Math.max(
+          0,
+          Math.min(...componentDetections.map((point) => point.percentX)) - markerVisualRadiusXPercent
+        );
+        const maxPercentX = Math.min(
+          100,
+          Math.max(...componentDetections.map((point) => point.percentX)) + markerVisualRadiusXPercent
+        );
+        const minPercentY = Math.max(
+          0,
+          Math.min(...componentDetections.map((point) => point.percentY)) - markerVisualRadiusYPercent
+        );
+        const maxPercentY = Math.min(
+          100,
+          Math.max(...componentDetections.map((point) => point.percentY)) + markerVisualRadiusYPercent
+        );
 
         const centerX = (minPercentX + maxPercentX) / 2;
         const centerY = (minPercentY + maxPercentY) / 2;
@@ -456,7 +504,7 @@ const MapView = ({
         bubbles.push({
           id: `${label}-${componentDetections[0].id}-${componentDetections.length}`,
           label,
-          color: getLabelColorValue(label, labelScope),
+          color: '',
           count: componentDetections.length,
           minX: Math.min(...componentDetections.map((point) => point.x)),
           maxX: Math.max(...componentDetections.map((point) => point.x)),
@@ -470,12 +518,22 @@ const MapView = ({
       }
     });
 
-    return [...bubbles].sort((a, b) => {
+    const maxBubbleCount = Math.max(...bubbles.map((bubble) => bubble.count));
+
+    return bubbles.map((bubble) => ({
+      ...bubble,
+      color: getFaunaBubbleColorByCount(
+        bubble.label,
+        labelScope,
+        bubble.count,
+        maxBubbleCount
+      ),
+    })).sort((a, b) => {
       const areaA = a.widthPercent * a.heightPercent;
       const areaB = b.widthPercent * b.heightPercent;
       return areaB - areaA;
     });
-  }, [activeTab, detections, isLoading, labelScope]);
+  }, [activeTab, detections, isLoading, labelScope, mapProfile]);
 
   const hasNoDatabaseObservations =
     hasLiveData && !isLoading && !isLoadingStats && Number(stats?.totalDetections ?? 0) === 0;
