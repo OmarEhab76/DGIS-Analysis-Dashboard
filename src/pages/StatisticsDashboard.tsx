@@ -829,6 +829,13 @@ const StatisticsDashboard = () => {
 
   const hasApiError = hasLiveDatabaseData && (labelsQuery.isError || detectionsQuery.isError || statsQuery.isError);
   const isExportDisabled = labelsQuery.isLoading || detectionsQuery.isLoading;
+  const isPlainsFloraWithoutRepresentation =
+    activeTab === 'flora' &&
+    selectedBiome === 'plains' &&
+    !labelsQuery.isLoading &&
+    !detectionsQuery.isLoading &&
+    (labelsQuery.data?.length ?? 0) === 0 &&
+    (detectionsQuery.data?.length ?? 0) === 0;
 
   const handleExportReport = useCallback(() => {
     const detections = detectionsQuery.data ?? [];
@@ -872,6 +879,11 @@ const StatisticsDashboard = () => {
           {hasApiError && (
             <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               Could not load dashboard data for {activeBiome.label}. Ensure the API server is running and {expectedDbFile} exists.
+            </div>
+          )}
+          {isPlainsFloraWithoutRepresentation && (
+            <div className="mb-4 rounded-lg border border-amber-300/50 bg-amber-200/10 px-3 py-2 text-sm text-amber-100">
+              No flora is represented in Plains. Switch to Fauna to view available Plains statistics.
             </div>
           )}
           <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-4 lg:grid-cols-[1.05fr_1.3fr]">

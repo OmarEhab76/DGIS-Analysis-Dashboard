@@ -539,6 +539,12 @@ const MapView = ({
 
   const hasNoDatabaseObservations =
     hasLiveData && !isLoading && !isLoadingStats && Number(stats?.totalDetections ?? 0) === 0;
+  const isPlainsFloraWithoutRepresentation =
+    !isLoading &&
+    activeTab === 'flora' &&
+    selectedBiome === 'plains' &&
+    labels.length === 0 &&
+    detections.length === 0;
 
   const totalAnimals = useMemo(
     () => labels.filter((label) => label.group === 'fauna').reduce((sum, label) => sum + label.count, 0),
@@ -837,7 +843,16 @@ const MapView = ({
         </div>
       )}
 
-      {!isLoading && !hasLiveData && (
+      {isPlainsFloraWithoutRepresentation && (
+        <div className="absolute inset-0 grid place-items-center text-center px-6 bg-background/20">
+          <div className="max-w-sm rounded-lg border border-border bg-card/90 px-4 py-3">
+            <p className="text-sm font-semibold text-foreground">No flora is represented in Plains.</p>
+            <p className="text-xs text-muted-foreground mt-1">Switch to Fauna to explore available Plains detections.</p>
+          </div>
+        </div>
+      )}
+
+      {!isPlainsFloraWithoutRepresentation && !isLoading && !hasLiveData && (
         <div className="absolute inset-0 grid place-items-center text-center px-6 bg-background/20">
           <div className="max-w-sm rounded-lg border border-border bg-card/90 px-4 py-3">
             <p className="text-sm font-semibold text-foreground">No detection data yet for {biomeLabel}</p>
@@ -846,7 +861,7 @@ const MapView = ({
         </div>
       )}
 
-      {hasNoDatabaseObservations && (
+      {!isPlainsFloraWithoutRepresentation && hasNoDatabaseObservations && (
         <div className="absolute inset-0 grid place-items-center text-center px-6 bg-background/20">
           <div className="max-w-sm rounded-lg border border-border bg-card/90 px-4 py-3">
             <p className="text-sm font-semibold text-foreground">No observations yet for {biomeLabel}</p>
