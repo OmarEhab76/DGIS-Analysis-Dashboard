@@ -68,6 +68,7 @@ interface MapViewProps {
   stats?: DashboardStats;
   isLoadingStats?: boolean;
   isLoading?: boolean;
+  hideMapOverlays?: boolean;
 }
 
 interface FaunaDensityBubble {
@@ -138,6 +139,7 @@ const MapView = ({
   stats,
   isLoadingStats = false,
   isLoading = false,
+  hideMapOverlays = false,
 }: MapViewProps) => {
   const mapRootRef = useRef<HTMLDivElement | null>(null);
   const mapViewportRef = useRef<HTMLDivElement | null>(null);
@@ -775,15 +777,17 @@ const MapView = ({
       )}
 
       {/* Stats cards overlaid on the map */}
-      <div className="absolute top-4 left-4 right-4 z-20">
-        <StatsCards
-          activeTab={activeTab}
-          stats={stats}
-          totalAnimals={totalAnimals}
-          isLoading={isLoadingStats}
-          hasLiveData={hasLiveData}
-        />
-      </div>
+      {!hideMapOverlays && (
+        <div className="absolute top-4 left-4 right-4 z-20">
+          <StatsCards
+            activeTab={activeTab}
+            stats={stats}
+            totalAnimals={totalAnimals}
+            isLoading={isLoadingStats}
+            hasLiveData={hasLiveData}
+          />
+        </div>
+      )}
 
       {/* Markers */}
       {!isMapMode && (
@@ -1054,15 +1058,17 @@ const MapView = ({
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg border border-border px-3 py-2">
-        <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Legend</p>
-        {legendItems.map((item) => (
-          <div key={item.name} className="flex items-center gap-2 py-0.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={getLabelStyle(item.name, labelScope)} />
-            <span className="text-xs text-foreground">{item.name}</span>
-          </div>
-        ))}
-      </div>
+      {!hideMapOverlays && (
+        <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg border border-border px-3 py-2">
+          <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Legend</p>
+          {legendItems.map((item) => (
+            <div key={item.name} className="flex items-center gap-2 py-0.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={getLabelStyle(item.name, labelScope)} />
+              <span className="text-xs text-foreground">{item.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Zoom controls */}
       <div className="absolute bottom-4 right-4 flex flex-col gap-1">

@@ -36,6 +36,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DashboardTab>(getInitialTab);
   const [selectedBiome, setSelectedBiome] = useState<BiomeId>(getInitialBiome);
+  const [hideMapOverlays, setHideMapOverlays] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     dateFrom: '',
     dateTo: '',
@@ -166,6 +167,8 @@ const Index = () => {
           isLoadingLabels={labelsQuery.isLoading}
           onExportReport={handleExportReport}
           isExportDisabled={isExportDisabled}
+          hideMapOverlays={hideMapOverlays}
+          onHideMapOverlaysChange={setHideMapOverlays}
           filters={filters}
           onFiltersChange={setFilters}
         />
@@ -186,6 +189,7 @@ const Index = () => {
             emptyDbFile={expectedDbFile}
             stats={statsQuery.data}
             isLoadingStats={statsQuery.isLoading}
+            hideMapOverlays={hideMapOverlays}
           />
         </main>
       </div>

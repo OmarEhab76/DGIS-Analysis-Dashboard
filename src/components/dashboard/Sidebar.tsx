@@ -9,6 +9,8 @@ interface SidebarProps {
   labels: DashboardLabel[];
   isLoadingLabels?: boolean;
   isExportDisabled?: boolean;
+  hideMapOverlays?: boolean;
+  onHideMapOverlaysChange?: (hide: boolean) => void;
   onExportReport: () => void;
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
@@ -22,6 +24,8 @@ const Sidebar = ({
   onFiltersChange,
   isLoadingLabels = false,
   isExportDisabled = false,
+  hideMapOverlays = false,
+  onHideMapOverlaysChange,
   onExportReport,
 }: SidebarProps) => {
   const groupDisplayName: Record<LabelGroup, string> = {
@@ -214,6 +218,32 @@ const Sidebar = ({
           className="w-full accent-primary h-1.5"
         />
       </div>
+
+      {onHideMapOverlaysChange && (
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-medium text-foreground">Hide legend and cards</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={hideMapOverlays}
+              aria-label="Hide legend and cards in dot-map"
+              onClick={() => onHideMapOverlaysChange(!hideMapOverlays)}
+              className={`relative h-5 w-9 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 ${
+                hideMapOverlays
+                  ? 'bg-primary'
+                  : 'bg-muted'
+              }`}
+            >
+              <span
+                className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-background shadow transition-transform duration-200 ${
+                  hideMapOverlays ? 'translate-x-4' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Active category labels */}
       <div>
