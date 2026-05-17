@@ -232,7 +232,7 @@ const Sidebar = ({
               className={`relative h-5 w-9 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 ${
                 hideMapOverlays
                   ? 'bg-primary'
-                  : 'bg-muted'
+                  : 'bg-[#27352c]'
               }`}
             >
               <span
