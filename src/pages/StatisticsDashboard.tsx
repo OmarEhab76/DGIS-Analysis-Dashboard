@@ -84,7 +84,7 @@ const taxonomyMap: Record<string, string> = {
   'Desert Scorpion': 'Arachnids', 'Desert Scorpions': 'Arachnids',
 
   // Flora: Trees - Gymnosperms
-  'Conifer': 'Gymnosperms (Conifers)', 'Pine Tree': 'Gymnosperms (Conifers)',
+  'Conifer': 'Gymnosperms (Conifers)', 'Cypress': 'Gymnosperms (Conifers)', 'Pine Tree': 'Gymnosperms (Conifers)',
   // Flora: Trees - Angiosperms (Broadleaf)
   'Birch Tree': 'Broadleaf Trees', 'Hickory': 'Broadleaf Trees', 'Maple': 'Broadleaf Trees',
   // Flora: Trees - Angiosperms (Desert/Tropical)
@@ -140,6 +140,10 @@ const MORPHOLOGY_FLORA_SPECIES_DIMENSIONS: Record<string, FloraMorphologySpecies
   'Conifer': {
     averageHeight: 40,
     averageWidth: 10,
+  },
+  'Cypress': {
+    averageHeight: 30,
+    averageWidth: 8,
   },
   'Pine Tree': {
     averageHeight: 35,
