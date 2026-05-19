@@ -638,6 +638,14 @@ app.get('/api/drones/status', (req, res) => {
   }
 });
 
+// Serve frontend build files in production
+app.use(express.static(path.join(process.cwd(), 'dist')));
+
+// Catch-all route to serve index.html for React Router
+app.get('*', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+});
+
 app.use((error, _req, res, _next) => {
   console.error(error);
   res.status(500).json({ error: 'Internal server error' });
