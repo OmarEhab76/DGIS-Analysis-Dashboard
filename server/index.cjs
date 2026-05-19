@@ -98,10 +98,10 @@ const BIOME_CONFIG = {
     areaScanned: 0.3178,
     mapProjection: {
       mode: 'fixed',
-      minX: 0,
-      maxX: 1153,
-      minZ: 0,
-      maxZ: 1153,
+      minX: -200,
+      maxX: 1200,
+      minZ: -200,
+      maxZ: 1200,
       invertY: true,
     },
     labels: {
