@@ -39,15 +39,14 @@ Contains static assets that are served exactly as they are without being
 processed by Vite.
 
 - `icons/`: Application icons and logos.
-- `maps/`: Map data files (e.g., GeoJSON or TopoJSON) used for rendering maps in
-  the UI.
+- `maps/`: Contains fixed-dimension (1280x1280) high-resolution terrain mappings for the 5 supported biomes (Temperate, Boreal, Mountain, Plains, and Subtropical).
 - `robots.txt`: Instructions for web crawlers.
 
 ### `server/`
 
 Contains backend server code.
 
-- `index.cjs`: The main entry point for the backend server logic.
+- `index.cjs`: The main entry point for the backend API logic. It handles data fetching and routes queries to the 5 local SQLite databases (`DGIS.db`, `DGIS_Boreal.db`, `DGIS_Mountain.db`, `DGIS_Plains.db`, and `DGIS_Subtropical.db`).
 
 ### `src/`
 

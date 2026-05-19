@@ -14,8 +14,10 @@ Latest updates from `git log` (as of 2026-04-29):
   and integrated a dedicated Subtropical Desert map layer.
 - **Temperate map added (2026-04-29):** Introduced a new temperate map asset
   for biome coverage expansion.
-- **Mountain biome improvements (2026-04-22 to 2026-04-23):** Added Mountain DB
-  support and refined true point placement with biome-specific map bounds.
+- **Plains biome integration:** Added `DGIS_Plains.db` and integrated a dedicated Plains map layout.
+- **Centralized Map Projection & Viewport:** Implemented centralized true-point geographic placement leveraging fixed spatial bounding and `invertY` correction for *all* biomes. Introduced a complete Interactive Viewport system in `MapView.tsx` managing robust zoom, pan, and drag interactions via React state.
+- **Mountain & Boreal expansions (2026-04-xx):** Added Mountain DB
+  support and integrated Boreal map behaviors and databases.
 - **UI/category refinements (2026-04-23):** Updated animal icon usage and fixed
   label category behavior in the dashboard.
 
@@ -162,9 +164,7 @@ but targeting high-end diagnostic reports.
 - **`Sidebar.tsx`**: Filter controller running multi-group selections, specific
   determination (`indeterminate` checkbox logic), dynamic deterministic label
   colors referencing `labelColors.ts`, and active exports.
-- **`MapView.tsx`**: Hover/interactive zone displaying XY metrics scaled on
-  localized percentage margins directly originating from mapping thresholds from
-  the database bounds.
+- **`MapView.tsx`**: Hover/interactive zone displaying XY metrics scaled on localized percentage margins directly originating from mapping thresholds via database bounds. It features a complete Interactive Viewport system managing true zoom, pan, and drag interactions via React state, and includes a spatial clustering algorithm (Fauna Density Bubbles) to dynamically render high-density flora/fauna pockets properly.
 - **`StatsCards.tsx`**: Aggregates dynamic numeric trackers parsing total
   elements.
 - **`Navbar.tsx`**: High-level tab controls routing map toggles.

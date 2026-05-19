@@ -142,27 +142,6 @@ After startup:
 - Frontend loads but no data:
   - Confirm API is running and `/api/health` succeeds.
 
-## Recent Project Changes
-
-Latest updates from repository history:
-
-|Date|Commit|Change|
-|---|---|---|
-|2026-04-29|`7c0b687`|Added Subtropical map support|
-|2026-04-29|`6c2e874`|Added Subtropical desert database|
-|2026-04-29|`d5f9000`|Added temperate map asset/support|
-|2026-04-23|`94c5043`|Added mountain map bounds and true point placement|
-|2026-04-22|`0e9172f`|Added Mountain database|
-|2026-04-22|`87b3184`|Fixed zoom in/out behavior|
-|2026-04-18|`1f0f299`|Adapted confidence score distribution for values below 50%|
-|2026-04-18|`7a7b6e5`|Added data to `DGIS_Boreal`|
-|2026-04-18|`0e5c62e`|Added true-placement Boreal map behavior|
-
-To inspect recent changes locally:
-
-1. `git log --date=short --pretty=format:"%h | %ad | %s" -n 20`
-2. `git show <commit_hash>`
-
 ## Project Structure
 
 - `src/`: frontend app

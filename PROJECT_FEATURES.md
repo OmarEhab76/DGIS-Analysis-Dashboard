@@ -35,7 +35,9 @@ The dashboard serves as a centralized platform for:
 
 - **Marker-based visualization** of ecological detections
 - **Biome-specific map layers** with custom terrain graphics
-- **Zoom and pan controls** for detailed exploration
+- **True point geographic coordinate placement** via fixed spatial bounding
+- **Complete zoom and pan viewport interactions** for detailed exploration
+- **Spatial clustering algorithm** (Fauna Density Bubbles) for dynamic grouping of dense configurations
 - **Real-time marker updates** based on filter selections
 - **Color-coded species markers** for easy identification
 
