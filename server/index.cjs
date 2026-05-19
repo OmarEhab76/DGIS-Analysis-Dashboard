@@ -642,7 +642,10 @@ app.get('/api/drones/status', (req, res) => {
 app.use(express.static(path.join(process.cwd(), 'dist')));
 
 // Catch-all route to serve index.html for React Router
-app.get('*', (req, res) => {
+app.get(/^(.*)$/, (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
   res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
 });
 
