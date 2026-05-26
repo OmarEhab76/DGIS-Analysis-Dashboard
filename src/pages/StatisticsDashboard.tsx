@@ -132,6 +132,18 @@ interface BaseTooltipProps<T> {
   }>;
 }
 
+interface TaxonomySpeciesSummary {
+  name: string;
+  count: number;
+}
+
+interface PieTooltipDatum {
+  name: string;
+  value: number;
+  percent: number;
+  species: TaxonomySpeciesSummary[];
+}
+
 const MORPHOLOGY_FLORA_SPECIES_DIMENSIONS: Record<string, FloraMorphologySpeciesDimension> = {
   'Birch Tree': {
     averageHeight: 22.5,
@@ -271,11 +283,15 @@ function buildFixedTicks(domain: [number, number]): number[] {
 
 
 
-const CustomPieTooltip = ({ active, payload }: BaseTooltipProps<{ name: string; value: number; percent: number }>) => {
+const CustomPieTooltip = ({
+  active,
+  payload,
+  activeBiomeLabel,
+}: BaseTooltipProps<PieTooltipDatum> & { activeBiomeLabel: string }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="w-56 border border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground rounded shadow-lg shadow-black/50 outline-none z-50">
+      <div className="w-64 border border-emerald-900/40 bg-[#0a2e21] p-3 text-foreground rounded shadow-lg shadow-black/50 outline-none z-50">
         <p className="text-sm font-semibold">{data.name}</p>
         <div className="mt-2 space-y-1 text-xs">
           <div className="flex items-center justify-between gap-2">
@@ -286,6 +302,17 @@ const CustomPieTooltip = ({ active, payload }: BaseTooltipProps<{ name: string; 
             <span className="text-muted-foreground">Percentage</span>
             <span className="font-medium">{data.percent}%</span>
           </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Map</span>
+            <span className="max-w-[140px] truncate text-right font-medium" title={activeBiomeLabel}>{activeBiomeLabel}</span>
+          </div>
+        </div>
+
+        <div className="mt-2 border-t border-emerald-900/30 pt-2 text-xs">
+          <p className="text-muted-foreground">Species in this taxonomy</p>
+          <p className="mt-1 max-h-28 overflow-y-auto pr-1 leading-relaxed">
+            {data.species.map((species) => species.name).join(', ')}
+          </p>
         </div>
       </div>
     );
@@ -601,31 +628,75 @@ const StatisticsDashboard = () => {
   const succulentsDesertPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.succulentsDesert / floraTaxonomyStats.total) * 100) : 0;
   const floweringMedicinalPct = floraTaxonomyStats.total > 0 ? Math.round((floraTaxonomyStats.floweringMedicinal / floraTaxonomyStats.total) * 100) : 0;
 
+  const taxonomySpeciesBySegment = useMemo(() => {
+    const floraSegmentByTaxonomy: Record<string, string> = {
+      'Gymnosperms (Conifers)': 'Gymnosperms',
+      'Broadleaf Trees': 'Broadleaf',
+      'Desert / Tropical Trees': 'Desert / Tropical',
+      'Herbs / Ground Plants': 'Herbs / Ground',
+      'Succulents & Desert Plants': 'Succulents',
+      'Flowering/Medicinal Plants': 'Flowering/Medicinal',
+    };
+
+    const segmentMap = new Map<string, Map<string, number>>();
+    const detections = detectionsQuery.data ?? [];
+
+    detections.forEach((detection) => {
+      const taxonomyCategory = taxonomyMap[detection.name];
+      if (!taxonomyCategory) {
+        return;
+      }
+
+      const segmentName =
+        activeTab === 'fauna'
+          ? taxonomyCategory
+          : floraSegmentByTaxonomy[taxonomyCategory];
+
+      if (!segmentName) {
+        return;
+      }
+
+      const speciesCounts = segmentMap.get(segmentName) ?? new Map<string, number>();
+      speciesCounts.set(detection.name, (speciesCounts.get(detection.name) ?? 0) + 1);
+      segmentMap.set(segmentName, speciesCounts);
+    });
+
+    const speciesBySegment: Record<string, TaxonomySpeciesSummary[]> = {};
+    segmentMap.forEach((speciesCounts, segmentName) => {
+      speciesBySegment[segmentName] = [...speciesCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count }));
+    });
+
+    return speciesBySegment;
+  }, [activeTab, detectionsQuery.data]);
+
   const pieData = useMemo(() => {
     if (activeTab === 'fauna') {
       const data = [
-        { name: 'Mammals', value: taxonomyStats.mammals, fill: 'rgb(74, 222, 128)', percent: mammalsPct },
-        { name: 'Birds', value: taxonomyStats.birds, fill: 'rgb(253, 230, 138)', percent: birdsPct },
-        { name: 'Reptiles', value: taxonomyStats.reptiles, fill: 'rgb(251, 113, 133)', percent: reptilesPct },
-        { name: 'Amphibians', value: taxonomyStats.amphibians, fill: 'rgb(96, 165, 250)', percent: amphibiansPct },
-        { name: 'Arachnids', value: taxonomyStats.arachnids, fill: 'rgb(192, 132, 252)', percent: arachnidsPct },
+        { name: 'Mammals', value: taxonomyStats.mammals, fill: 'rgb(74, 222, 128)', percent: mammalsPct, species: taxonomySpeciesBySegment.Mammals ?? [] },
+        { name: 'Birds', value: taxonomyStats.birds, fill: 'rgb(253, 230, 138)', percent: birdsPct, species: taxonomySpeciesBySegment.Birds ?? [] },
+        { name: 'Reptiles', value: taxonomyStats.reptiles, fill: 'rgb(251, 113, 133)', percent: reptilesPct, species: taxonomySpeciesBySegment.Reptiles ?? [] },
+        { name: 'Amphibians', value: taxonomyStats.amphibians, fill: 'rgb(96, 165, 250)', percent: amphibiansPct, species: taxonomySpeciesBySegment.Amphibians ?? [] },
+        { name: 'Arachnids', value: taxonomyStats.arachnids, fill: 'rgb(192, 132, 252)', percent: arachnidsPct, species: taxonomySpeciesBySegment.Arachnids ?? [] },
       ];
       return data.filter(d => d.value > 0);
     } else {
       const data = [
-        { name: 'Gymnosperms', value: floraTaxonomyStats.conifers, fill: 'rgb(6, 78, 59)', percent: conifersPct },
-        { name: 'Broadleaf', value: floraTaxonomyStats.broadleaf, fill: 'rgb(16, 185, 129)', percent: broadleafPct },
-        { name: 'Desert / Tropical', value: floraTaxonomyStats.desertTropical, fill: 'rgb(252, 211, 77)', percent: desertTropicalPct },
-        { name: 'Herbs / Ground', value: floraTaxonomyStats.herbsGround, fill: 'rgb(244, 114, 182)', percent: herbsGroundPct },
-        { name: 'Succulents', value: floraTaxonomyStats.succulentsDesert, fill: 'rgb(251, 146, 60)', percent: succulentsDesertPct },
-        { name: 'Flowering/Medicinal', value: floraTaxonomyStats.floweringMedicinal, fill: 'rgb(167, 139, 250)', percent: floweringMedicinalPct },
+        { name: 'Gymnosperms', value: floraTaxonomyStats.conifers, fill: 'rgb(6, 78, 59)', percent: conifersPct, species: taxonomySpeciesBySegment.Gymnosperms ?? [] },
+        { name: 'Broadleaf', value: floraTaxonomyStats.broadleaf, fill: 'rgb(16, 185, 129)', percent: broadleafPct, species: taxonomySpeciesBySegment.Broadleaf ?? [] },
+        { name: 'Desert / Tropical', value: floraTaxonomyStats.desertTropical, fill: 'rgb(252, 211, 77)', percent: desertTropicalPct, species: taxonomySpeciesBySegment['Desert / Tropical'] ?? [] },
+        { name: 'Herbs / Ground', value: floraTaxonomyStats.herbsGround, fill: 'rgb(244, 114, 182)', percent: herbsGroundPct, species: taxonomySpeciesBySegment['Herbs / Ground'] ?? [] },
+        { name: 'Succulents', value: floraTaxonomyStats.succulentsDesert, fill: 'rgb(251, 146, 60)', percent: succulentsDesertPct, species: taxonomySpeciesBySegment.Succulents ?? [] },
+        { name: 'Flowering/Medicinal', value: floraTaxonomyStats.floweringMedicinal, fill: 'rgb(167, 139, 250)', percent: floweringMedicinalPct, species: taxonomySpeciesBySegment['Flowering/Medicinal'] ?? [] },
       ];
       return data.filter(d => d.value > 0);
     }
   }, [
     activeTab, taxonomyStats, floraTaxonomyStats,
     mammalsPct, birdsPct, reptilesPct, amphibiansPct, arachnidsPct,
-    conifersPct, broadleafPct, desertTropicalPct, herbsGroundPct, succulentsDesertPct, floweringMedicinalPct
+    conifersPct, broadleafPct, desertTropicalPct, herbsGroundPct, succulentsDesertPct, floweringMedicinalPct,
+    taxonomySpeciesBySegment
   ]);
 
   const speciesCountStats = useMemo(() => {
@@ -1037,7 +1108,7 @@ const StatisticsDashboard = () => {
                             ))}
                           </Pie>
                           <RechartsTooltip 
-                            content={<CustomPieTooltip />} 
+                            content={<CustomPieTooltip activeBiomeLabel={activeBiome.label} />} 
                             cursor={{fill: 'transparent'}} 
                             wrapperStyle={{ zIndex: 100 }} 
                           />
