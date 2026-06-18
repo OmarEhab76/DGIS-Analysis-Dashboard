@@ -60,10 +60,10 @@ const BIOME_CONFIG = {
     areaScanned: 0.4350,
     mapProjection: {
       mode: 'fixed',
-      minX: 0,
-      maxX: 1000,
-      minZ: 0,
-      maxZ: 1000,
+      minX: -1050,
+      maxX: 50,
+      minZ: -350,
+      maxZ: 750,
       invertY: true,
     },
     labels: {
@@ -136,10 +136,10 @@ const BIOME_CONFIG = {
     areaScanned: 0.3015,
     mapProjection: {
       mode: 'fixed',
-      minX: 0,
-      maxX: 1000,
-      minZ: 0,
-      maxZ: 1000,
+      minX: 150,
+      maxX: 1150,
+      minZ: -400,
+      maxZ: 600,
       invertY: true,
     },
     labels: {
